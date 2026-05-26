@@ -1,0 +1,65 @@
+"filename", "language", "JavaScript", "HTML", "JSON", "comment", "blank", "total"
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\package-lock.json", "JSON", 0, 0, 2616, 0, 1, 2617
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\package.json", "JSON", 0, 0, 37, 0, 1, 38
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\constants\socketEvents.js", "JavaScript", 25, 0, 0, 0, 1, 26
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\controllers\chat.controller.js", "JavaScript", 321, 0, 0, 2, 64, 387
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\controllers\group.controller.js", "JavaScript", 223, 0, 0, 18, 65, 306
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\controllers\message.controller.js", "JavaScript", 115, 0, 0, 0, 35, 150
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\controllers\user.controller.js", "JavaScript", 731, 0, 0, 31, 171, 933
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\db\db.js", "JavaScript", 14, 0, 0, 0, 3, 17
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\index.js", "JavaScript", 10, 0, 0, 0, 3, 13
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\middlewares\adminPermission.middleware.js", "JavaScript", 21, 0, 0, 0, 6, 27
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\middlewares\draftImage.middleware.js", "JavaScript", 15, 0, 0, 0, 2, 17
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\middlewares\draftOwner.middleware.js", "JavaScript", 23, 0, 0, 0, 8, 31
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\middlewares\multer.middleware.js", "JavaScript", 10, 0, 0, 0, 2, 12
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\middlewares\publicProfile.middleware.js", "JavaScript", 20, 0, 0, 0, 8, 28
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\middlewares\userAuth.middleware.js", "JavaScript", 35, 0, 0, 2, 12, 49
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\models\chat.model.js", "JavaScript", 43, 0, 0, 0, 16, 59
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\models\message.model.js", "JavaScript", 79, 0, 0, 1, 8, 88
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\models\user.model.js", "JavaScript", 73, 0, 0, 0, 10, 83
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\redis\config.js", "JavaScript", 6, 0, 0, 2, 3, 11
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\routes\chat.route.js", "JavaScript", 18, 0, 0, 2, 2, 22
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\routes\group.route.js", "JavaScript", 24, 0, 0, 0, 4, 28
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\routes\message.route.js", "JavaScript", 11, 0, 0, 2, 2, 15
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\routes\ping.route.js", "JavaScript", 7, 0, 0, 0, 3, 10
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\routes\user.route.js", "JavaScript", 47, 0, 0, 0, 4, 51
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\server.js", "JavaScript", 34, 0, 0, 5, 15, 54
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\services\brevoMail.service.js", "JavaScript", 21, 0, 0, 6, 8, 35
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\services\cloudinary.service.js", "JavaScript", 44, 0, 0, 8, 15, 67
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\services\generateOTP.js", "JavaScript", 5, 0, 0, 0, 1, 6
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\services\generateTokens.js", "JavaScript", 6, 0, 0, 0, 2, 8
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\services\group.service.js", "JavaScript", 78, 0, 0, 22, 33, 133
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\services\mail.service.js", "JavaScript", 35, 0, 0, 0, 7, 42
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\services\mailSender.service.js", "JavaScript", 21, 0, 0, 0, 7, 28
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\services\sendOTP.js", "JavaScript", 20, 0, 0, 0, 4, 24
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\services\sendVerificationToken.js", "JavaScript", 128, 0, 0, 0, 14, 142
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\sockets\handler\chat.handler.js", "JavaScript", 7, 0, 0, 1, 4, 12
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\sockets\handler\disconnect.handler.js", "JavaScript", 23, 0, 0, 0, 8, 31
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\sockets\handler\group.handler.js", "JavaScript", 13, 0, 0, 40, 16, 69
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\sockets\handler\index.js", "JavaScript", 15, 0, 0, 0, 4, 19
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\sockets\handler\message.handler.js", "JavaScript", 188, 0, 0, 1, 54, 243
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\sockets\handler\onlineStatus.handler.js", "JavaScript", 29, 0, 0, 2, 10, 41
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\sockets\handler\onlineStatusAfterLogin.js", "JavaScript", 50, 0, 0, 2, 12, 64
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\sockets\index.js", "JavaScript", 28, 0, 0, 3, 17, 48
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\sockets\middleware\adminPermission.middleware.js", "JavaScript", 23, 0, 0, 0, 7, 30
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\sockets\middleware\auth.middleware.js", "JavaScript", 27, 0, 0, 2, 11, 40
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\sockets\socketInstance.js", "JavaScript", 10, 0, 0, 0, 2, 12
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\sockets\soketsMap.js", "JavaScript", 10, 0, 0, 0, 3, 13
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\sockets\utils\cookieParser.js", "JavaScript", 11, 0, 0, 0, 1, 12
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\sockets\utils\getGroupMembers.js", "JavaScript", 19, 0, 0, 1, 9, 29
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\sockets\utils\getOtherChatUser.js", "JavaScript", 13, 0, 0, 0, 6, 19
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\sockets\utils\getUserChatPartners.js", "JavaScript", 18, 0, 0, 0, 7, 25
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\utils\apiUtils.js", "JavaScript", 25, 0, 0, 0, 5, 30
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\utils\asyncHandler.js", "JavaScript", 10, 0, 0, 0, 2, 12
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\utils\document existance check\chat.js", "JavaScript", 13, 0, 0, 0, 5, 18
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\utils\document existance check\group.js", "JavaScript", 3, 0, 0, 5, 2, 10
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\utils\document existance check\message.js", "JavaScript", 0, 0, 0, 0, 1, 1
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\utils\document existance check\user.js", "JavaScript", 12, 0, 0, 0, 6, 18
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\utils\fields validations\assertAtleastOneField.js", "JavaScript", 10, 0, 0, 0, 2, 12
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\utils\fields validations\assertRequiredFields.js", "JavaScript", 13, 0, 0, 0, 9, 22
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\utils\fields validations\validateAtleastOneField.js", "JavaScript", 10, 0, 0, 0, 2, 12
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\utils\fields validations\validateRequiredFields.js", "JavaScript", 15, 0, 0, 4, 8, 27
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\utils\getUniqueMembers.js", "JavaScript", 13, 0, 0, 11, 8, 32
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\utils\isValidObjectId.js", "JavaScript", 7, 0, 0, 0, 4, 11
+"f:\Coding\MERN Stack\Backend\Websockets\Chat App\server\src\utils\verify-success.html", "HTML", 0, 77, 0, 0, 9, 86
+"Total", "-", 2878, 77, 2653, 173, 774, 6555

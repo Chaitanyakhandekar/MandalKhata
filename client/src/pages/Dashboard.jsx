@@ -1,0 +1,353 @@
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import Layout from "../components/Layout.jsx";
+import { useMandalStore } from "../store/useMandalStore.js";
+import { reportApi } from "../api/report.api.js";
+import {
+    ResponsiveContainer,
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    PieChart,
+    Pie,
+    Cell
+} from "recharts";
+import {
+    TrendingUp,
+    TrendingDown,
+    Scale,
+    ArrowUpRight,
+    Activity,
+    PlusCircle,
+    CalendarDays
+} from "lucide-react";
+import toast from "react-hot-toast";
+
+const COLORS = ["#6366f1", "#ec4899", "#eab308", "#f97316", "#3b82f6", "#ef4444", "#6b7280"];
+
+const Dashboard = () => {
+    const { selectedYear } = useMandalStore();
+    const [stats, setStats] = useState({
+        totalDonations: 0,
+        totalExpenses: 0,
+        currentBalance: 0,
+        totalTransactions: 0,
+        recentActivity: [],
+        expensesByCategory: [],
+        donationsByPaymentMethod: [],
+        monthlyComparison: []
+    });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            if (!selectedYear) return;
+            setLoading(true);
+            try {
+                const response = await reportApi.getDashboardStats({ festivalYear: selectedYear });
+                if (response.success) {
+                    setStats(response.data);
+                } else {
+                    toast.error(response.message || "Failed to load dashboard data");
+                }
+            } catch (err) {
+                toast.error("An error occurred while loading stats");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDashboardData();
+    }, [selectedYear]);
+
+    const formatCurrency = (val) => {
+        return new Intl.NumberFormat("en-IN", {
+            style: "currency",
+            currency: "INR",
+            maximumFractionDigits: 0
+        }).format(val);
+    };
+
+    if (loading) {
+        return (
+            <Layout>
+                <div className="flex h-[60vh] items-center justify-center">
+                    <div className="flex flex-col items-center gap-3">
+                        <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent"></div>
+                        <p className="text-sm font-medium text-gray-500">Loading Dashboard Stats...</p>
+                    </div>
+                </div>
+            </Layout>
+        );
+    }
+
+    return (
+        <Layout>
+            {/* Upper Header Welcome */}
+            <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
+                        Festival Year {selectedYear}
+                    </h1>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Here is a financial summary of your Ganesh Mandal's records
+                    </p>
+                </div>
+                <div className="flex gap-3">
+                    <Link
+                        to="/donations"
+                        className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-md shadow-emerald-600/15 transition-all hover:bg-emerald-700"
+                    >
+                        <PlusCircle className="h-4 w-4" />
+                        Add Donation
+                    </Link>
+                    <Link
+                        to="/expenses"
+                        className="flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2.5 text-xs font-semibold text-white shadow-md shadow-rose-600/15 transition-all hover:bg-rose-700"
+                    >
+                        <PlusCircle className="h-4 w-4" />
+                        Add Expense
+                    </Link>
+                </div>
+            </div>
+
+            {/* Metric Cards Layout */}
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+                {/* Donations Card */}
+                <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md shadow-gray-100/30 dark:border-gray-800 dark:bg-gray-900">
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-gray-400 dark:text-gray-500">Total Donations</span>
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400">
+                            <TrendingUp className="h-5 w-5" />
+                        </div>
+                    </div>
+                    <div className="mt-4">
+                        <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                            {formatCurrency(stats.totalDonations)}
+                        </span>
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">
+                            Incoming Funds
+                        </p>
+                    </div>
+                </div>
+
+                {/* Expenses Card */}
+                <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md shadow-gray-100/30 dark:border-gray-800 dark:bg-gray-900">
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-gray-400 dark:text-gray-500">Total Expenses</span>
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400">
+                            <TrendingDown className="h-5 w-5" />
+                        </div>
+                    </div>
+                    <div className="mt-4">
+                        <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                            {formatCurrency(stats.totalExpenses)}
+                        </span>
+                        <p className="text-xs text-rose-600 dark:text-rose-400 font-medium mt-1">
+                            Outgoing Payments
+                        </p>
+                    </div>
+                </div>
+
+                {/* Balance Card */}
+                <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md shadow-gray-100/30 dark:border-gray-800 dark:bg-gray-900">
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-gray-400 dark:text-gray-500">Net Balance</span>
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400">
+                            <Scale className="h-5 w-5" />
+                        </div>
+                    </div>
+                    <div className="mt-4">
+                        <span className={`text-2xl font-bold ${stats.currentBalance >= 0 ? "text-gray-900 dark:text-white" : "text-rose-600"}`}>
+                            {formatCurrency(stats.currentBalance)}
+                        </span>
+                        <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium mt-1">
+                            Available in Ledger
+                        </p>
+                    </div>
+                </div>
+
+                {/* Total Transactions Card */}
+                <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md shadow-gray-100/30 dark:border-gray-800 dark:bg-gray-900">
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-gray-400 dark:text-gray-500">Transactions Ledger</span>
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-sky-600 dark:bg-sky-950/30 dark:text-sky-400">
+                            <Activity className="h-5 w-5" />
+                        </div>
+                    </div>
+                    <div className="mt-4">
+                        <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                            {stats.totalTransactions}
+                        </span>
+                        <p className="text-xs text-sky-600 dark:text-sky-400 font-medium mt-1">
+                            Logged Operations
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Graphs / Analytics Layout */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 mb-8">
+                {/* Monthly Bar Chart */}
+                <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md shadow-gray-100/30 dark:border-gray-800 dark:bg-gray-900 lg:col-span-2">
+                    <h3 className="text-md font-bold text-gray-800 dark:text-white mb-6">
+                        Monthly Inflow vs Outflow
+                    </h3>
+                    <div className="h-80 w-full text-xs">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={stats.monthlyComparison}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                                <XAxis dataKey="month" tickLine={false} />
+                                <YAxis tickLine={false} />
+                                <Tooltip
+                                    formatter={(value) => [`₹${value}`, ""]}
+                                    contentStyle={{ borderRadius: "12px", border: "1px solid #f3f4f6" }}
+                                />
+                                <Legend verticalAlign="top" height={36} />
+                                <Bar dataKey="donations" name="Donations" fill="#10b981" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="expenses" name="Expenses" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* Pie Chart Expense Category */}
+                <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md shadow-gray-100/30 dark:border-gray-800 dark:bg-gray-900">
+                    <h3 className="text-md font-bold text-gray-800 dark:text-white mb-6">
+                        Expenses by Category
+                    </h3>
+                    <div className="relative flex h-80 flex-col items-center justify-center">
+                        {stats.expensesByCategory.length === 0 ? (
+                            <p className="text-sm text-gray-400">No expenses recorded for {selectedYear}</p>
+                        ) : (
+                            <>
+                                <div className="h-60 w-full text-xs">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={stats.expensesByCategory}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={60}
+                                                outerRadius={80}
+                                                paddingAngle={4}
+                                                dataKey="amount"
+                                                nameKey="category"
+                                            >
+                                                {stats.expensesByCategory.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip formatter={(value) => `₹${value}`} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                {/* Custom Legend */}
+                                <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] font-medium text-gray-500">
+                                    {stats.expensesByCategory.map((entry, index) => (
+                                        <div key={entry.category} className="flex items-center gap-1.5">
+                                            <span
+                                                className="h-2.5 w-2.5 rounded-full"
+                                                style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                                            ></span>
+                                            <span>{entry.category}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Recent activity log */}
+            <div className="rounded-2xl border border-gray-100 bg-white shadow-md shadow-gray-100/30 dark:border-gray-800 dark:bg-gray-900">
+                <div className="flex items-center justify-between border-b border-gray-100 p-6 dark:border-gray-800">
+                    <h3 className="text-md font-bold text-gray-800 dark:text-white">Recent Transactions</h3>
+                    <Link
+                        to="/ledger"
+                        className="flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-500 transition-colors"
+                    >
+                        View Full Ledger
+                        <ArrowUpRight className="h-3.5 w-3.5" />
+                    </Link>
+                </div>
+
+                <div className="overflow-x-auto">
+                    {stats.recentActivity.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                            <Activity className="h-10 w-10 text-gray-300 mb-2" />
+                            <p className="text-sm font-semibold text-gray-400">No activity yet</p>
+                            <p className="text-xs text-gray-400">Start logging donations and expenses to populate charts.</p>
+                        </div>
+                    ) : (
+                        <table className="w-full text-left text-sm border-collapse">
+                            <thead>
+                                <tr className="bg-gray-50/50 text-[11px] font-bold uppercase tracking-wider text-gray-400 border-b border-gray-100 dark:bg-gray-800/20 dark:border-gray-800">
+                                    <th className="px-6 py-4">Title / Name</th>
+                                    <th className="px-6 py-4">Type</th>
+                                    <th className="px-6 py-4">Category / Method</th>
+                                    <th className="px-6 py-4">Date</th>
+                                    <th className="px-6 py-4 text-right">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800/40">
+                                {stats.recentActivity.map((act) => (
+                                    <tr key={act._id} className="hover:bg-gray-50/30 dark:hover:bg-gray-800/10">
+                                        <td className="px-6 py-4.5">
+                                            <div className="font-semibold text-gray-700 dark:text-gray-300">
+                                                {act.type === "donation" ? `Donation: ${act.donorName}` : act.title}
+                                            </div>
+                                            {act.note && (
+                                                <div className="text-[10px] text-gray-400 truncate max-w-xs mt-0.5">
+                                                    {act.note}
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4.5">
+                                            <span
+                                                className={`inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-semibold ${
+                                                    act.type === "donation"
+                                                        ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400"
+                                                        : "bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400"
+                                                }`}
+                                            >
+                                                {act.type === "donation" ? "Donation" : "Expense"}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4.5 font-medium text-gray-500 text-xs">
+                                            {act.type === "donation"
+                                                ? `Payment: ${act.paymentMethod.toUpperCase()}`
+                                                : act.category}
+                                        </td>
+                                        <td className="px-6 py-4.5 text-xs text-gray-400">
+                                            <div className="flex items-center gap-1">
+                                                <CalendarDays className="h-3.5 w-3.5" />
+                                                {new Date(act.date).toLocaleDateString("en-IN", {
+                                                    day: "numeric",
+                                                    month: "short",
+                                                    year: "numeric"
+                                                })}
+                                            </div>
+                                        </td>
+                                        <td className={`px-6 py-4.5 text-right font-bold text-sm ${
+                                            act.type === "donation" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                                        }`}>
+                                            {act.type === "donation" ? "+" : "-"} ₹{act.amount.toLocaleString("en-IN")}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                </div>
+            </div>
+        </Layout>
+    );
+};
+
+export default Dashboard;
