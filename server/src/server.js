@@ -16,7 +16,7 @@ const httpServer = createServer(app)   // Create an HTTP server
 
 
 app.use(cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: process.env.CLIENT_URL || "https://mandal-khata-ai0pvnett-chaitanyakhandekars-projects.vercel.app",
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true
 }))
