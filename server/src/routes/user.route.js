@@ -10,6 +10,12 @@ import { userAuth } from '../middlewares/userAuth.middleware.js';
 
 const router = Router();
 
+router.route("/ping").get((req, res) => {
+     res.status(200).json({
+          success: true,
+          message: "Server is running"
+     });
+});
 router.route("/register").post(registerUser);
 router.route("/login").post(loginUser);
 router.route("/logout").get(userAuth, logoutUser);
