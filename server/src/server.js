@@ -15,9 +15,20 @@ const httpServer = createServer(app)   // Create an HTTP server
 // Initialize Socket.IO with the server
 
 
+const allowedOrigins = [
+    process.env.CLIENT_URL,
+    "http://localhost:5173",
+    "https://mandal-khata-opacurps4-chaitanyakhandekars-projects.vercel.app"
+].filter(Boolean);
+
 app.use(cors({
-    origin: process.env.CLIENT_URL || "https://mandal-khata-opacurps4-chaitanyakhandekars-projects.vercel.app",
-    // origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error("Not allowed by CORS"));
+        }
+    },
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true
 }))
