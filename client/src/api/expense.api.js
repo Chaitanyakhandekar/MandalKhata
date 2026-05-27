@@ -1,9 +1,16 @@
 import api from "../services/api.js";
+import axios from "axios";
+
+
+const baseURL = import.meta.env.VITE_ENV === "production"
+    ? import.meta.env.VITE_BACKEND_URL_PROD
+    : import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+
 
 export const expenseApi = {
     getExpenses: async (params) => {
         try {
-            const response = await api.get("/api/expenses", { params });
+            const response = await axios.get(`${baseURL}/api/expenses`, { params, withCredentials: true });
             return response.data;
         } catch (error) {
             return {
@@ -15,10 +22,8 @@ export const expenseApi = {
 
     createExpense: async (formData) => {
         try {
-            const response = await api.post("/api/expenses", formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data"
-                }
+            const response = await axios.post(`${baseURL}/api/expenses`, formData, {
+                withCredentials: true
             });
             return response.data;
         } catch (error) {
@@ -31,10 +36,8 @@ export const expenseApi = {
 
     updateExpense: async (id, formData) => {
         try {
-            const response = await api.put(`/api/expenses/${id}`, formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data"
-                }
+            const response = await axios.put(`${baseURL}/api/expenses/${id}`, formData, {
+                withCredentials: true
             });
             return response.data;
         } catch (error) {
@@ -47,7 +50,9 @@ export const expenseApi = {
 
     deleteExpense: async (id) => {
         try {
-            const response = await api.delete(`/api/expenses/${id}`);
+            const response = await axios.delete(`${baseURL}/api/expenses/${id}`, {
+                withCredentials: true
+            });
             return response.data;
         } catch (error) {
             return {

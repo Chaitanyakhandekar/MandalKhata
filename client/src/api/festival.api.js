@@ -1,10 +1,16 @@
 import axios from "axios";
 import api from "../services/api.js";
 
+const baseURL = import.meta.env.VITE_ENV === "production"
+    ? import.meta.env.VITE_BACKEND_URL_PROD
+    : import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+
 export const festivalApi = {
     getYears: async () => {
         try {
-            const response = await api.get("/api/festivals");
+            const response = await axios.get(`${baseURL}/api/festivals`, {
+                withCredentials: true
+            });
             return response.data;
         } catch (error) {
             return {
@@ -16,7 +22,7 @@ export const festivalApi = {
 
     createYear: async (yearData) => {
         try {
-            const response = await axios.post("http://localhost:8000/api/festivals", yearData, {
+            const response = await axios.post(`${baseURL}/api/festivals`, yearData, {
                 withCredentials: true,
                 headers: {
                     "Content-Type": "application/json"
@@ -36,7 +42,9 @@ export const festivalApi = {
 
     setActiveYear: async (id) => {
         try {
-            const response = await api.patch(`/api/festivals/${id}/active`);
+            const response = await axios.patch(`${baseURL}/api/festivals/${id}/active`, {
+                withCredentials: true
+            });
             return response.data;
         } catch (error) {
             return {
@@ -48,7 +56,9 @@ export const festivalApi = {
 
     deleteYear: async (id) => {
         try {
-            const response = await api.delete(`/api/festivals/${id}`);
+            const response = await axios.delete(`${baseURL}/api/festivals/${id}`, {
+                withCredentials: true
+            });
             return response.data;
         } catch (error) {
             return {

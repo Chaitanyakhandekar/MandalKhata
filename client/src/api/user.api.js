@@ -1,9 +1,16 @@
-import api from "../services/api.js";
+import axios from "axios";
+
+
+const baseURL = import.meta.env.VITE_ENV === "production"
+    ? import.meta.env.VITE_BACKEND_URL_PROD
+    : import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
 
 export const userApi = {
     login: async (credentials) => {
         try {
-            const response = await api.post("/api/users/login", credentials);
+            const response = await axios.post(`${baseURL}/api/users/login`, credentials, {
+                withCredentials: true
+            });
             return response.data;
         } catch (error) {
             return {
@@ -15,7 +22,9 @@ export const userApi = {
 
     register: async (userData) => {
         try {
-            const response = await api.post("/api/users/register", userData);
+            const response = await axios.post(`${baseURL}/api/users/register`, userData, {
+                withCredentials: true
+            });
             return response.data;
         } catch (error) {
             return {
@@ -27,7 +36,9 @@ export const userApi = {
 
     logout: async () => {
         try {
-            const response = await api.get("/api/users/logout");
+            const response = await axios.get(`${baseURL}/api/users/logout`, {
+                withCredentials: true
+            });
             return response.data;
         } catch (error) {
             return {
@@ -39,7 +50,9 @@ export const userApi = {
 
     authMe: async () => {
         try {
-            const response = await api.get("/api/users/auth-me");
+            const response = await axios.get(`${baseURL}/api/users/auth-me`, {
+                withCredentials: true
+            });
             return response.data;
         } catch (error) {
             return {
@@ -51,7 +64,9 @@ export const userApi = {
 
     updateProfile: async (profileData) => {
         try {
-            const response = await api.put("/api/users/update-profile", profileData);
+            const response = await axios.put(`${baseURL}/api/users/update-profile`, profileData, {
+                withCredentials: true
+            });
             return response.data;
         } catch (error) {
             return {

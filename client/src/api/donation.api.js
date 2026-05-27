@@ -1,9 +1,16 @@
 import api from "../services/api.js";
+import axios from "axios";
+
+
+const baseURL = import.meta.env.VITE_ENV === "production"
+    ? import.meta.env.VITE_BACKEND_URL_PROD
+    : import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+
 
 export const donationApi = {
     getDonations: async (params) => {
         try {
-            const response = await api.get("/api/donations", { params });
+            const response = await axios.get(`${baseURL}/api/donations`, { params, withCredentials: true });
             return response.data;
         } catch (error) {
             return {
@@ -15,7 +22,9 @@ export const donationApi = {
 
     createDonation: async (donationData) => {
         try {
-            const response = await api.post("/api/donations", donationData);
+            const response = await axios.post(`${baseURL}/api/donations`, donationData, {
+                withCredentials: true
+            });
             return response.data;
         } catch (error) {
             return {
@@ -27,7 +36,9 @@ export const donationApi = {
 
     updateDonation: async (id, donationData) => {
         try {
-            const response = await api.put(`/api/donations/${id}`, donationData);
+            const response = await axios.put(`${baseURL}/api/donations/${id}`, donationData, {
+                withCredentials: true
+            });
             return response.data;
         } catch (error) {
             return {
@@ -39,7 +50,9 @@ export const donationApi = {
 
     deleteDonation: async (id) => {
         try {
-            const response = await api.delete(`/api/donations/${id}`);
+            const response = await axios.delete(`${baseURL}/api/donations/${id}`, {
+                withCredentials: true
+            });
             return response.data;
         } catch (error) {
             return {

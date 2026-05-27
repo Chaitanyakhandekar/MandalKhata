@@ -8,6 +8,8 @@ const userAuth = async (req, res, next) => {
     try {
         const { accessToken } = req.cookies;
 
+        console.log("Access Token ", accessToken)
+
         if (!accessToken || accessToken.trim() === "") {
             if (req.headers["x-auth-check-type"] && req.headers["x-auth-check-type"] === "login-check-hit") {
                 return res.status(200).json({ success: false, isLoggedIn: false });
