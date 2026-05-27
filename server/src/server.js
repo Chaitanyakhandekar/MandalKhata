@@ -18,7 +18,8 @@ const httpServer = createServer(app)   // Create an HTTP server
 const allowedOrigins = [
     process.env.CLIENT_URL,
     "http://localhost:5173",
-    "https://mandal-khata-opacurps4-chaitanyakhandekars-projects.vercel.app"
+    "https://mandal-khata-opacurps4-chaitanyakhandekars-projects.vercel.app",
+    "https://mandal-khata.vercel.app"
 ].filter(Boolean);
 
 app.use(cors({
