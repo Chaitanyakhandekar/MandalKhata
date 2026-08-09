@@ -24,11 +24,23 @@ const createFestivalYear = asyncHandler(async (req, res) => {
     const totalCount = await FestivalYear.countDocuments({ createdBy: req.user._id });
     const activeStatus = totalCount === 0 ? true : !!isActive;
 
-    const festivalYear = await FestivalYear.create({
-        year: trimmedYear,
-        isActive: activeStatus,
-        createdBy: req.user._id
-    });
+    let festivalYear;
+    try {
+        festivalYear = await FestivalYear.create({
+            year: trimmedYear,
+            isActive: activeStatus,
+            createdBy: req.user._id
+        });
+    } catch (error) {
+        // Unique key collision: the year already exists for this account
+        if (error.code === 11000) {
+            const existing = await FestivalYear.findOne({ year: trimmedYear, createdBy: req.user._id });
+            if (existing) {
+                return res.status(409).json(new ApiResponse(409, null, "Festival year already exists", false));
+            }
+        }
+        throw error;
+    }
 
     if (activeStatus) {
         await FestivalYear.updateMany(

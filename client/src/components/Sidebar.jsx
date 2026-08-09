@@ -11,7 +11,8 @@ import {
     FolderKanban,
     Home as HomeIcon,
     Building2,
-    UtensilsCrossed
+    UtensilsCrossed,
+    FileSpreadsheet
 } from "lucide-react";
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
@@ -26,6 +27,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         { name: "Ledger", path: "/ledger", icon: BookOpen },
         { name: "Mahaprasad", path: "/mahaprasad", icon: UtensilsCrossed },
         { name: "Reports", path: "/reports", icon: BarChart3 },
+        { name: "Bulk Import", path: "/bulk-import", icon: FileSpreadsheet },
         { name: "Settings", path: "/settings", icon: Settings }
     ];
 

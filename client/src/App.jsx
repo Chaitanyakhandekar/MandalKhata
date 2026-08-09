@@ -11,6 +11,7 @@ import Expenses from './pages/Expenses.jsx'
 import Ledger from './pages/Ledger.jsx'
 import Mahaprasad from './pages/Mahaprasad.jsx'
 import Reports from './pages/Reports.jsx'
+import BulkImport from './pages/BulkImport.jsx'
 import Settings from './pages/Settings.jsx'
 import ProtectedRoute from './components/guards/ProtectedRoute.jsx'
 import ProtectedRouteAuth from './components/guards/ProtectedRouteAuth.jsx'
@@ -124,6 +125,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Reports />
+            </ProtectedRoute>
+          }
+        />
+        <Route 
+          path='/bulk-import' 
+          element={
+            <ProtectedRoute>
+              <BulkImport />
             </ProtectedRoute>
           }
         />

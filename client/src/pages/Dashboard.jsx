@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import Layout from "../components/Layout.jsx";
 import { useMandalStore } from "../store/useMandalStore.js";
@@ -67,60 +67,70 @@ const Dashboard = () => {
     });
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchDashboardData = async () => {
-            if (!selectedYear) {
-                setLoading(false);
-                return;
+    const fetchDashboardData = useCallback(async () => {
+        if (!selectedYear) {
+            setLoading(false);
+            return;
+        }
+        setLoading(true);
+        try {
+            const response = await reportApi.getDashboardStats({ festivalYear: selectedYear });
+            if (response.success) {
+                const data = response.data || {};
+                const rs = data.residentStats || {};
+                const mp = data.mahaprasad || {};
+                setStats({
+                    totalDonations: data.totalDonations ?? 0,
+                    totalExpenses: data.totalExpenses ?? 0,
+                    currentBalance: data.currentBalance ?? 0,
+                    totalTransactions: data.totalTransactions ?? 0,
+                    recentActivity: data.recentActivity ?? [],
+                    expensesByCategory: data.expensesByCategory ?? [],
+                    donationsByPaymentMethod: data.donationsByPaymentMethod ?? [],
+                    monthlyComparison: data.monthlyComparison ?? [],
+                    totalResidentDonations: data.totalResidentDonations ?? 0,
+                    totalExternalDonorDonations: data.totalExternalDonorDonations ?? 0,
+                    donationsByDonorType: data.donationsByDonorType ?? [],
+                    residentStats: {
+                        totalHouseholds: rs.totalHouseholds ?? 0,
+                        totalRegisteredFlats: rs.totalRegisteredFlats ?? 0,
+                        totalExpectedFlats: rs.totalExpectedFlats ?? 0,
+                        remainingFlats: rs.remainingFlats ?? 0,
+                        totalResidents: rs.totalResidents ?? 0,
+                        buildings: rs.buildings ?? [],
+                        wings: rs.wings ?? [],
+                        unregisteredFlats: rs.unregisteredFlats ?? []
+                    },
+                    mahaprasad: {
+                        registeredHouseholds: mp.registeredHouseholds ?? 0,
+                        totalPeople: mp.totalPeople ?? 0,
+                        expectedAttendance: mp.expectedAttendance ?? 0,
+                        recommendedMeals: mp.recommendedMeals ?? 0
+                    }
+                });
+            } else {
+                toast.error(response.message || "Failed to load dashboard data");
             }
-            setLoading(true);
-            try {
-                const response = await reportApi.getDashboardStats({ festivalYear: selectedYear });
-                if (response.success) {
-                    const data = response.data || {};
-                    const rs = data.residentStats || {};
-                    const mp = data.mahaprasad || {};
-                    setStats({
-                        totalDonations: data.totalDonations ?? 0,
-                        totalExpenses: data.totalExpenses ?? 0,
-                        currentBalance: data.currentBalance ?? 0,
-                        totalTransactions: data.totalTransactions ?? 0,
-                        recentActivity: data.recentActivity ?? [],
-                        expensesByCategory: data.expensesByCategory ?? [],
-                        donationsByPaymentMethod: data.donationsByPaymentMethod ?? [],
-                        monthlyComparison: data.monthlyComparison ?? [],
-                        totalResidentDonations: data.totalResidentDonations ?? 0,
-                        totalExternalDonorDonations: data.totalExternalDonorDonations ?? 0,
-                        donationsByDonorType: data.donationsByDonorType ?? [],
-                        residentStats: {
-                            totalHouseholds: rs.totalHouseholds ?? 0,
-                            totalRegisteredFlats: rs.totalRegisteredFlats ?? 0,
-                            totalExpectedFlats: rs.totalExpectedFlats ?? 0,
-                            remainingFlats: rs.remainingFlats ?? 0,
-                            totalResidents: rs.totalResidents ?? 0,
-                            buildings: rs.buildings ?? [],
-                            wings: rs.wings ?? [],
-                            unregisteredFlats: rs.unregisteredFlats ?? []
-                        },
-                        mahaprasad: {
-                            registeredHouseholds: mp.registeredHouseholds ?? 0,
-                            totalPeople: mp.totalPeople ?? 0,
-                            expectedAttendance: mp.expectedAttendance ?? 0,
-                            recommendedMeals: mp.recommendedMeals ?? 0
-                        }
-                    });
-                } else {
-                    toast.error(response.message || "Failed to load dashboard data");
-                }
-            } catch (err) {
-                toast.error("An error occurred while loading stats");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchDashboardData();
+        } catch (err) {
+            toast.error("An error occurred while loading stats");
+        } finally {
+            setLoading(false);
+        }
     }, [selectedYear]);
+
+    useEffect(() => {
+        fetchDashboardData();
+    }, [fetchDashboardData]);
+
+    // Bulk import dispatches this event after a successful import so the dashboard
+    // statistics (donations, expenses, balance, flats, residents, Mahaprasad) refresh instantly.
+    useEffect(() => {
+        const handleDataRefresh = () => {
+            fetchDashboardData();
+        };
+        window.addEventListener("dashboard-data-refresh", handleDataRefresh);
+        return () => window.removeEventListener("dashboard-data-refresh", handleDataRefresh);
+    }, [fetchDashboardData]);
 
     const formatCurrency = (val) => {
         return new Intl.NumberFormat("en-IN", {

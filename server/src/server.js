@@ -53,6 +53,7 @@ import householdRouter from "./routes/household.route.js"
 import buildingConfigRouter from "./routes/buildingConfig.route.js"
 import externalDonorRouter from "./routes/externalDonor.route.js"
 import mahaprasadRouter from "./routes/mahaprasad.route.js"
+import bulkImportRouter from "./routes/bulkImport.route.js"
 
 app.use("/api/users", userRouter)
 app.use("/api/festivals", festivalRouter)
@@ -63,6 +64,7 @@ app.use("/api/households", householdRouter)
 app.use("/api/building-configs", buildingConfigRouter)
 app.use("/api/donors", externalDonorRouter)
 app.use("/api/mahaprasad", mahaprasadRouter)
+app.use("/api/bulk-import", bulkImportRouter)
 
 // Global 404 and error handlers
 app.use((req, res) => {

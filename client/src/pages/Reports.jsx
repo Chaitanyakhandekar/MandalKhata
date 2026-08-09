@@ -4,6 +4,7 @@ import { reportApi } from "../api/report.api.js";
 import { donationApi } from "../api/donation.api.js";
 import { expenseApi } from "../api/expense.api.js";
 import { useMandalStore } from "../store/useMandalStore.js";
+import { userAuthStore } from "../store/userStore.js";
 import { jsPDF } from "jspdf";
 import {
     BarChart3,
@@ -96,9 +97,150 @@ const Reports = () => {
         });
     };
 
-    // 1. Export PDF Function
+    // 0. Classic two-sided Financial Report (Income | Amount | Expense | Amount)
+    const exportFinancialReport = async () => {
+        const donRes = await donationApi.getDonations({ festivalYear: selectedYear, limit: 1000 });
+        const expRes = await expenseApi.getExpenses({ festivalYear: selectedYear, limit: 1000 });
+
+        const incomeRows = (donRes && donRes.success && donRes.data && donRes.data.donations ? donRes.data.donations : [])
+            .slice()
+            .sort((a, b) => new Date(a.date) - new Date(b.date));
+        const expenseRows = (expRes && expRes.success && expRes.data && expRes.data.expenses ? expRes.data.expenses : [])
+            .slice()
+            .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        const totalIncome = incomeRows.reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
+        const totalExpense = expenseRows.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+        const balance = totalIncome - totalExpense;
+
+        const orgName = (userAuthStore.getState().user && userAuthStore.getState().user.name)
+            ? String(userAuthStore.getState().user.name).trim()
+            : "Ganesh Mandal";
+        const title = `${orgName} Report ${selectedYear}`;
+
+        const doc = new jsPDF({ unit: "mm", format: "a4" });
+        doc.setLineWidth(0.25);
+        doc.setDrawColor(0, 0, 0);
+        doc.setTextColor(0, 0, 0);
+
+        const pageWidth = 210;
+        const left = 14;
+        const tableWidth = pageWidth - left * 2;
+        const amountCol = 27;
+        const labelCol = (tableWidth - amountCol * 2) / 2;
+        const widths = [labelCol, amountCol, labelCol, amountCol];
+
+        const entryH = 8;
+        const headerH = 9;
+        const totalsH = 8.5;
+        const pageBreakAt = 280;
+
+        const fmt = (n) => (n || 0).toLocaleString("en-IN");
+
+        let y = 36;
+
+        const drawRow = (cells, { height = entryH, bold = false, fillColor = null, fontSize = 9, centered = false } = {}) => {
+            if (y + height > pageBreakAt) {
+                doc.addPage();
+                y = 18;
+                drawHeader();
+            }
+            if (fillColor) {
+                doc.setFillColor(fillColor[0], fillColor[1], fillColor[2]);
+                doc.rect(left, y, tableWidth, height, "FD");
+            }
+            doc.setFont("helvetica", bold ? "bold" : "normal");
+            doc.setFontSize(fontSize);
+            let cx = left;
+            for (let i = 0; i < 4; i++) {
+                doc.rect(cx, y, widths[i], height);
+                const value = cells[i] !== undefined && cells[i] !== null ? String(cells[i]) : "";
+                let align = "left";
+                let textX = cx + 2.5;
+                if (centered) {
+                    align = "center";
+                    textX = cx + widths[i] / 2;
+                } else if (i % 2 === 1) {
+                    align = "right";
+                    textX = cx + widths[i] - 2.5;
+                }
+                doc.text(value, textX, y + height / 2 + 1.4, { align });
+                cx += widths[i];
+            }
+            y += height;
+        };
+
+        const drawHeader = () => {
+            drawRow(["Income", "Amount", "Expense", "Amount"], {
+                height: headerH,
+                bold: true,
+                fontSize: 9.5,
+                centered: true,
+                fill: [243, 244, 246]
+            });
+        };
+
+        // Centered report title
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(15);
+        doc.text(title, pageWidth / 2, 24, { align: "center" });
+
+        // Four-column bordered table
+        drawHeader();
+
+        const maxRows = Math.max(incomeRows.length, expenseRows.length);
+        for (let i = 0; i < maxRows; i++) {
+            const inc = incomeRows[i];
+            const exp = expenseRows[i];
+            drawRow([
+                inc ? inc.donorName : "",
+                inc ? fmt(inc.amount) : "",
+                exp ? exp.title : "",
+                exp ? fmt(exp.amount) : ""
+            ], { height: entryH, fontSize: 9 });
+        }
+
+        // Total Income (left) / Total Expense (right)
+        drawRow(["Total Income", fmt(totalIncome), "Total Expense", fmt(totalExpense)], {
+            height: totalsH,
+            bold: true,
+            fontSize: 9.5,
+            fill: [243, 244, 246]
+        });
+
+        // Remaining Balance (right side, under expense column)
+        drawRow(["", "", "Remaining Balance", fmt(balance)], { height: totalsH, bold: true, fontSize: 9.5 });
+
+        // Final total / closing amount - balanced on both sides
+        drawRow(["Final Total", fmt(totalIncome), "Final Total", fmt(totalIncome)], {
+            height: totalsH,
+            bold: true,
+            fontSize: 9.5,
+            fill: [243, 244, 246]
+        });
+
+        const safeOrg = orgName.replace(/[^\w-]+/g, "_");
+        doc.save(`${safeOrg}_Financial_Report_${selectedYear}.pdf`);
+        toast.success("PDF statement downloaded successfully");
+    };
+
+    // 2. Export PDF Function
     const handleExportPDF = async () => {
         if (!selectedYear) return;
+
+        if (reportType === "overall") {
+            setExportLoading(true);
+            try {
+                await exportFinancialReport();
+            } catch (err) {
+                toast.error("Failed to generate PDF statement");
+                console.error(err);
+            } finally {
+                setExportLoading(false);
+            }
+            return;
+        }
+
         setExportLoading(true);
         try {
             const doc = new jsPDF();
