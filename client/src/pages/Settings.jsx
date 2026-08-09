@@ -2,11 +2,13 @@ import React, { useEffect, useState } from "react";
 import Layout from "../components/Layout.jsx";
 import { festivalApi } from "../api/festival.api.js";
 import { useMandalStore } from "../store/useMandalStore.js";
-import { CalendarRange, Plus, ToggleLeft, ToggleRight, Trash2, ShieldAlert } from "lucide-react";
+import { CalendarRange, Moon, Plus, Sun, ToggleLeft, ToggleRight, Trash2, ShieldAlert } from "lucide-react";
+import { useThemeStore } from "../store/themeStore.js";
 import toast from "react-hot-toast";
 
 const Settings = () => {
     const { years, setYears, fetchYears } = useMandalStore();
+    const { theme, setTheme } = useThemeStore();
 
     const [newYear, setNewYear] = useState("");
     const [loading, setLoading] = useState(false);
@@ -91,46 +93,85 @@ const Settings = () => {
             </div>
 
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-                {/* Left side: Add New Year Card */}
-                <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                    <h3 className="text-md font-bold text-gray-800 dark:text-white mb-1.5">
-                        Add Festival Year
-                    </h3>
-                    <p className="text-xs text-gray-400 mb-6">
-                        Create a new finance book for a yearly festival (e.g. 2025, 2026).
-                    </p>
+                {/* Left side: Add New Year + Appearance cards */}
+                <div className="space-y-8">
+                    <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                        <h3 className="text-md font-bold text-gray-800 dark:text-white mb-1.5">
+                            Add Festival Year
+                        </h3>
+                        <p className="text-xs text-gray-400 mb-6">
+                            Create a new finance book for a yearly festival (e.g. 2025, 2026).
+                        </p>
 
-                    <form onSubmit={handleCreateYear} className="space-y-4">
-                        <div>
-                            <label className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                                Festival Year
-                            </label>
-                            <input
-                                type="text"
-                                required
-                                value={newYear}
-                                onChange={(e) => setNewYear(e.target.value)}
-                                placeholder="2025"
-                                maxLength={4}
-                                className="mt-2 w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm placeholder-gray-400 outline-none transition focus:border-indigo-500 dark:border-gray-850 dark:bg-gray-950"
-                            />
+                        <form onSubmit={handleCreateYear} className="space-y-4">
+                            <div>
+                                <label className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                                    Festival Year
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={newYear}
+                                    onChange={(e) => setNewYear(e.target.value)}
+                                    placeholder="2025"
+                                    maxLength={4}
+                                    className="mt-2 w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm placeholder-gray-400 outline-none transition focus:border-indigo-500 dark:border-gray-850 dark:bg-gray-950"
+                                />
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-indigo-600 py-2.5 text-xs font-semibold text-white shadow-md shadow-indigo-600/15 transition hover:bg-indigo-700 disabled:opacity-50"
+                            >
+                                {loading ? (
+                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                                ) : (
+                                    <>
+                                        <Plus className="h-4 w-4" />
+                                        Add Year
+                                    </>
+                                )}
+                            </button>
+                        </form>
+                    </div>
+
+                    {/* Appearance / Theme Card */}
+                    <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                        <h3 className="text-md font-bold text-gray-800 dark:text-white mb-1.5">
+                            Appearance
+                        </h3>
+                        <p className="text-xs text-gray-400 mb-6">
+                            Choose how MandalKhata looks on this device.
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            <button
+                                onClick={() => setTheme("light")}
+                                aria-pressed={theme === "light"}
+                                className={`flex items-center justify-center gap-2 rounded-xl border py-3 text-xs font-semibold transition ${
+                                    theme === "light"
+                                        ? "border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20"
+                                        : "border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-950"
+                                }`}
+                            >
+                                <Sun className="h-4 w-4" />
+                                Light
+                            </button>
+                            <button
+                                onClick={() => setTheme("dark")}
+                                aria-pressed={theme === "dark"}
+                                className={`flex items-center justify-center gap-2 rounded-xl border py-3 text-xs font-semibold transition ${
+                                    theme === "dark"
+                                        ? "border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20"
+                                        : "border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-950"
+                                }`}
+                            >
+                                <Moon className="h-4 w-4" />
+                                Dark
+                            </button>
                         </div>
-
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-indigo-600 py-2.5 text-xs font-semibold text-white shadow-md shadow-indigo-600/15 transition hover:bg-indigo-700 disabled:opacity-50"
-                        >
-                            {loading ? (
-                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                            ) : (
-                                <>
-                                    <Plus className="h-4 w-4" />
-                                    Add Year
-                                </>
-                            )}
-                        </button>
-                    </form>
+                    </div>
                 </div>
 
                 {/* Right side: Festival Years Table */}
