@@ -113,9 +113,10 @@ const Reports = () => {
         const totalExpense = expenseRows.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
         const balance = totalIncome - totalExpense;
 
-        const orgName = (userAuthStore.getState().user && userAuthStore.getState().user.name)
-            ? String(userAuthStore.getState().user.name).trim()
-            : "Ganesh Mandal";
+        const orgName = "Unique Residency Mandal";
+        // const orgName = (userAuthStore.getState().user && userAuthStore.getState().user.name)
+        //     ? String(userAuthStore.getState().user.name).trim()
+        //     : "Ganesh Mandal";
         const title = `${orgName} Report ${selectedYear}`;
 
         const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -244,7 +245,7 @@ const Reports = () => {
         setExportLoading(true);
         try {
             const doc = new jsPDF();
-            
+
             // Header Styles
             doc.setFillColor(15, 23, 42); // slate-900
             doc.rect(0, 0, 210, 40, "F");
@@ -272,7 +273,7 @@ const Reports = () => {
             doc.setDrawColor(229, 231, 235); // border
             doc.setFillColor(249, 250, 251); // header bg
             doc.rect(14, currentY, 182, 8, "FD");
-            
+
             doc.setFontSize(9);
             doc.setFont("helvetica", "bold");
             doc.text("Metric Title", 20, currentY + 5.5);
@@ -303,7 +304,7 @@ const Reports = () => {
             doc.setFont("helvetica", "bold");
             doc.text("Net Running Balance Available", 20, currentY + 6.5);
             doc.text(`Rs. ${stats.currentBalance.toLocaleString("en-IN")}`, 140, currentY + 6.5);
-            
+
             currentY += 22;
 
             if (reportType === "overall") {
@@ -489,7 +490,7 @@ const Reports = () => {
                 const res = await donationApi.getDonations({ festivalYear: selectedYear, limit: 1000 });
                 if (res.success && res.data.donations.length > 0) {
                     if (currentY > 230) { doc.addPage(); currentY = 20; }
-                    
+
                     doc.setFont("helvetica", "bold");
                     doc.setFontSize(13);
                     doc.text("Logged Donations Ledger", 14, currentY);
@@ -521,7 +522,7 @@ const Reports = () => {
                         doc.text(don.amount.toLocaleString("en-IN"), 168, currentY + 5.5);
                         currentY += 8;
                     });
-                    
+
                     currentY += 15;
                 }
             }
@@ -531,7 +532,7 @@ const Reports = () => {
                 const res = await expenseApi.getExpenses({ festivalYear: selectedYear, limit: 1000 });
                 if (res.success && res.data.expenses.length > 0) {
                     if (currentY > 230) { doc.addPage(); currentY = 20; }
-                    
+
                     doc.setFont("helvetica", "bold");
                     doc.setFontSize(13);
                     doc.text("Logged Expenses Audit", 14, currentY);
@@ -696,7 +697,7 @@ const Reports = () => {
             </div>
 
             {/* Configurations Card */}
-            <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-md shadow-gray-100/30 dark:border-gray-800 dark:bg-gray-900 max-w-2xl mx-auto">
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-md shadow-gray-100/30 sm:p-8 dark:border-gray-800 dark:bg-gray-900 max-w-2xl mx-auto w-full">
                 <div className="flex flex-col items-center justify-center text-center mb-6">
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 mb-3 dark:bg-indigo-950/20 dark:text-indigo-400">
                         <BarChart3 className="h-6 w-6" />
@@ -713,41 +714,38 @@ const Reports = () => {
                         <label className="text-xs font-bold uppercase tracking-wider text-gray-400">
                             Select Report Category
                         </label>
-                        <div className="mt-2.5 grid grid-cols-3 gap-3">
+                        <div className="mt-2.5 grid grid-cols-1 gap-3 sm:grid-cols-3">
                             <button
                                 onClick={() => setReportType("overall")}
-                                className={`rounded-xl border py-3 px-4 text-xs font-bold transition-all ${
-                                    reportType === "overall"
-                                        ? "border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20"
-                                        : "border-gray-200 hover:bg-gray-50 dark:border-gray-850"
-                                }`}
+                                className={`rounded-xl border py-3 px-4 text-xs font-bold transition-all ${reportType === "overall"
+                                    ? "border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20"
+                                    : "border-gray-200 hover:bg-gray-50 dark:border-gray-850"
+                                    }`}
                             >
                                 Overall Ledger
                             </button>
                             <button
                                 onClick={() => setReportType("donations")}
-                                className={`rounded-xl border py-3 px-4 text-xs font-bold transition-all ${
-                                    reportType === "donations"
-                                        ? "border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20"
-                                        : "border-gray-200 hover:bg-gray-50 dark:border-gray-850"
-                                }`}
+                                className={`rounded-xl border py-3 px-4 text-xs font-bold transition-all ${reportType === "donations"
+                                    ? "border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20"
+                                    : "border-gray-200 hover:bg-gray-50 dark:border-gray-850"
+                                    }`}
                             >
                                 Donations only
                             </button>
                             <button
                                 onClick={() => setReportType("expenses")}
-                                className={`rounded-xl border py-3 px-4 text-xs font-bold transition-all ${
-                                    reportType === "expenses"
-                                        ? "border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20"
-                                        : "border-gray-200 hover:bg-gray-50 dark:border-gray-850"
-                                }`}
+                                className={`rounded-xl border py-3 px-4 text-xs font-bold transition-all ${reportType === "expenses"
+                                    ? "border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20"
+                                    : "border-gray-200 hover:bg-gray-50 dark:border-gray-850"
+                                    }`}
                             >
                                 Expenses only
                             </button>
                         </div>
                     </div>
 
-                    <div className="border-t border-gray-100 pt-6 grid grid-cols-2 gap-4 dark:border-gray-800">
+                    <div className="border-t border-gray-100 pt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 dark:border-gray-800">
                         {/* Download PDF button */}
                         <button
                             onClick={handleExportPDF}

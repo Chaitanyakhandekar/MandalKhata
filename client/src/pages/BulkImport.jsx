@@ -257,7 +257,7 @@ const BulkImport = () => {
                                 <UploadCloud className="h-6 w-6 text-gray-400" />
                             )}
                             {fileName ? (
-                                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">{fileName}</p>
+                                <p className="max-w-full truncate text-xs font-semibold text-gray-700 dark:text-gray-300">{fileName}</p>
                             ) : (
                                 <>
                                     <p className="text-xs font-semibold text-gray-600 dark:text-gray-300">
@@ -361,17 +361,17 @@ const BulkImport = () => {
                         </div>
                     )}
 
-                    <div className="mt-6 flex items-center justify-end gap-3">
+                    <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
                         <button
                             onClick={resetAll}
-                            className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-950"
+                            className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 sm:w-auto w-full dark:border-gray-800 dark:bg-gray-950"
                         >
                             Cancel
                         </button>
                         <button
                             onClick={handleConfirm}
                             disabled={importing || preview.data.length === 0}
-                            className={`flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-semibold text-white shadow-md transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                            className={`flex w-full items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-semibold text-white shadow-md transition disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto ${
                                 confirming
                                     ? "bg-emerald-600 shadow-emerald-600/15 hover:bg-emerald-700"
                                     : "bg-indigo-600 shadow-indigo-600/15 hover:bg-indigo-700"

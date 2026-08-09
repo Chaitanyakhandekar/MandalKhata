@@ -100,7 +100,10 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 </nav>
 
                 {/* Footer Credits */}
-                <div className="border-t border-slate-800 p-4 text-center">
+                <div
+                    className="border-t border-slate-800 p-4 text-center"
+                    style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+                >
                     <p className="text-xs text-slate-500">MandalKhata v1.0.0</p>
                     <p className="text-[10px] text-slate-600 mt-0.5">Finance Management</p>
                 </div>

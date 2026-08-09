@@ -27,12 +27,13 @@ const Navbar = ({ toggleSidebar }) => {
     };
 
     return (
-        <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-gray-200 bg-white/80 px-6 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/80">
+        <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-gray-200 bg-white/80 px-4 backdrop-blur-md sm:px-6 dark:border-gray-800 dark:bg-gray-900/80">
             {/* Left side: Hamburger (mobile only) & Breadcrumb */}
-            <div className="flex items-center gap-4">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-4">
                 <button
                     onClick={toggleSidebar}
-                    className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 lg:hidden dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                    className="shrink-0 rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 lg:hidden dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                    aria-label="Open navigation menu"
                 >
                     <Menu className="h-6 w-6" />
                 </button>
@@ -44,15 +45,15 @@ const Navbar = ({ toggleSidebar }) => {
             </div>
 
             {/* Right side: Active Year Selector, User Info & Logout */}
-            <div className="flex items-center gap-4">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-4">
                 {/* Year Dropdown Selector */}
                 {years.length > 0 && (
-                    <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-1.5 shadow-sm dark:border-gray-800 dark:bg-gray-950">
-                        <CalendarRange className="h-4 w-4 text-indigo-500" />
+                    <div className="flex min-w-0 items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-2.5 py-1.5 shadow-sm sm:gap-2 sm:px-3 dark:border-gray-800 dark:bg-gray-950">
+                        <CalendarRange className="hidden h-4 w-4 shrink-0 text-indigo-500 sm:block" />
                         <select
                             value={selectedYear}
                             onChange={(e) => setSelectedYear(e.target.value)}
-                            className="bg-transparent text-xs font-semibold text-gray-700 outline-none dark:text-gray-300"
+                            className="max-w-[110px] truncate bg-transparent text-xs font-semibold text-gray-700 outline-none sm:max-w-none dark:text-gray-300"
                         >
                             {years.map((y) => (
                                 <option key={y._id} value={y.year}>
@@ -65,7 +66,7 @@ const Navbar = ({ toggleSidebar }) => {
 
                 {/* Profile Widget */}
                 {user && (
-                    <div className="flex items-center gap-3 border-l border-gray-200 pl-4 dark:border-gray-800">
+                    <div className="flex items-center gap-2 border-l border-gray-200 pl-2 sm:gap-3 sm:pl-4 dark:border-gray-800">
                         <div className="hidden flex-col items-end lg:flex">
                             <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                                 {user.name}
@@ -74,7 +75,7 @@ const Navbar = ({ toggleSidebar }) => {
                                 @{user.username}
                             </span>
                         </div>
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-sm font-bold text-white shadow-md shadow-indigo-500/10">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-sm font-bold text-white shadow-md shadow-indigo-500/10">
                             {user.name.charAt(0).toUpperCase()}
                         </div>
                     </div>
@@ -84,7 +85,8 @@ const Navbar = ({ toggleSidebar }) => {
                 <button
                     onClick={handleLogout}
                     title="Log Out"
-                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 text-gray-400 hover:border-red-200 hover:bg-red-50 hover:text-red-500 transition-colors duration-200 dark:border-gray-800 dark:hover:border-red-900/50 dark:hover:bg-red-950/20"
+                    aria-label="Log Out"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-gray-400 hover:border-red-200 hover:bg-red-50 hover:text-red-500 transition-colors duration-200 dark:border-gray-800 dark:hover:border-red-900/50 dark:hover:bg-red-950/20"
                 >
                     <LogOut className="h-5 w-5" />
                 </button>

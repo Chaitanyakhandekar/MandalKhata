@@ -334,7 +334,7 @@ const ExternalDonors = () => {
                     </div>
                 ) : (
                     <>
-                        <div className="overflow-x-auto">
+                        <div className="hidden overflow-x-auto md:block">
                             <table className="w-full text-left text-sm border-collapse">
                                 <thead>
                                     <tr className="bg-gray-50/50 text-[11px] font-bold uppercase tracking-wider text-gray-400 border-b border-gray-100 dark:bg-gray-800/20 dark:border-gray-800">
@@ -435,6 +435,95 @@ const ExternalDonors = () => {
                             </table>
                         </div>
 
+                        {/* Mobile donor cards */}
+                        <div className="divide-y divide-gray-100 md:hidden dark:divide-gray-800/40">
+                            {donors.map((donor) => (
+                                <div key={donor._id} className="px-5 py-4">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0 flex-1">
+                                            <div className="font-semibold text-sm text-gray-700 dark:text-gray-300">
+                                                {donor.donorName}
+                                            </div>
+                                            {donor.organizationName && (
+                                                <div className="mt-0.5 truncate text-[11px] text-gray-400">
+                                                    {donor.organizationName}
+                                                </div>
+                                            )}
+                                            <div className="mt-0.5 text-[11px] text-gray-400">
+                                                {donor.phone || "—"}
+                                            </div>
+                                            <div className="mt-1 flex flex-wrap items-center gap-2">
+                                                <span className="inline-flex items-center rounded-lg bg-sky-50 px-2.5 py-0.5 text-[11px] font-semibold text-sky-700 dark:bg-sky-950/20 dark:text-sky-400">
+                                                    {donor.donorType}
+                                                </span>
+                                                <span className="inline-flex items-center rounded-lg bg-indigo-50 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-400">
+                                                    {donor.donationCount} donations
+                                                </span>
+                                                <span className={`inline-flex items-center rounded-lg px-2.5 py-0.5 text-[11px] font-semibold ${
+                                                    donor.active
+                                                        ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400"
+                                                        : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                                                }`}>
+                                                    {donor.active ? "ACTIVE" : "INACTIVE"}
+                                                </span>
+                                            </div>
+                                            <div className="mt-0.5 text-[11px] text-gray-400">
+                                                Latest: {donor.latestDonation
+                                                    ? new Date(donor.latestDonation).toLocaleDateString("en-IN", {
+                                                        day: "numeric",
+                                                        month: "short",
+                                                        year: "numeric"
+                                                    })
+                                                    : "—"}
+                                            </div>
+                                        </div>
+                                        <div className="shrink-0 text-right">
+                                            <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                                                {formatCurrency(donor.totalDonated)}
+                                            </div>
+                                            <div className="mt-0.5 text-[10px] font-medium text-gray-400">total donated</div>
+                                        </div>
+                                    </div>
+                                    <div className="mt-3 flex items-center justify-end gap-1.5">
+                                        <button
+                                            onClick={() => openHistoryModal(donor)}
+                                            title="View donation history"
+                                            aria-label="View donation history"
+                                            className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-sky-600 transition-colors dark:border-gray-800 dark:hover:bg-gray-800"
+                                        >
+                                            <Eye className="h-4.5 w-4.5" />
+                                        </button>
+                                        <button
+                                            onClick={() => openEditModal(donor)}
+                                            title="Edit donor"
+                                            aria-label="Edit donor"
+                                            className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-indigo-600 transition-colors dark:border-gray-800 dark:hover:bg-gray-800"
+                                        >
+                                            <Edit2 className="h-4.5 w-4.5" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleToggleActive(donor)}
+                                            title={donor.active ? "Deactivate donor" : "Activate donor"}
+                                            aria-label={donor.active ? "Deactivate donor" : "Activate donor"}
+                                            className={`flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 transition-colors dark:border-gray-800 ${
+                                                donor.active ? "text-gray-500 hover:bg-amber-50 hover:text-amber-600" : "text-gray-500 hover:bg-emerald-50 hover:text-emerald-600"
+                                            }`}
+                                        >
+                                            <Power className="h-4.5 w-4.5" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(donor._id)}
+                                            title="Delete donor"
+                                            aria-label="Delete donor"
+                                            className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-500 transition-colors dark:border-gray-800 dark:hover:bg-red-950/20"
+                                        >
+                                            <Trash2 className="h-4.5 w-4.5" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
                         {pages > 1 && (
                             <div className="flex items-center justify-between border-t border-gray-100 px-6 py-4 dark:border-gray-800">
                                 <span className="text-xs text-gray-500">Page {page} of {pages}</span>
@@ -491,7 +580,7 @@ const ExternalDonors = () => {
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <div>
                                         <label className="text-xs font-bold uppercase tracking-wider text-gray-400">Donor Type *</label>
                                         <select
@@ -569,18 +658,18 @@ const ExternalDonors = () => {
                                 )}
                             </div>
 
-                            <div className="flex items-center justify-end gap-3 border-t border-gray-100 bg-gray-50 px-6 py-4 rounded-b-3xl dark:border-gray-800 dark:bg-gray-950">
+                            <div className="flex flex-col-reverse gap-2 border-t border-gray-100 bg-gray-50 px-6 py-4 rounded-b-3xl sm:flex-row sm:items-center sm:justify-end sm:gap-3 dark:border-gray-800 dark:bg-gray-950">
                                 <button
                                     type="button"
                                     onClick={() => setIsOpen(false)}
-                                    className="rounded-xl border border-gray-200 bg-white py-2.5 px-4 text-xs font-semibold text-gray-500 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900"
+                                    className="w-full rounded-xl border border-gray-200 bg-white py-2.5 px-4 text-xs font-semibold text-gray-500 hover:bg-gray-50 sm:w-auto dark:border-gray-800 dark:bg-gray-900"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={formLoading}
-                                    className="flex items-center gap-1.5 rounded-xl bg-indigo-600 py-2.5 px-4 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+                                    className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-indigo-600 py-2.5 px-4 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 sm:w-auto"
                                 >
                                     {formLoading ? (
                                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>

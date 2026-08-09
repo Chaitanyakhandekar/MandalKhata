@@ -591,7 +591,7 @@ const Households = () => {
                             </div>
                         ) : (
                             <>
-                                <div className="overflow-x-auto">
+                                <div className="hidden overflow-x-auto md:block">
                                     <table className="w-full text-left text-sm border-collapse">
                                         <thead>
                                             <tr className="bg-gray-50/50 text-[11px] font-bold uppercase tracking-wider text-gray-400 border-b border-gray-100 dark:bg-gray-800/20 dark:border-gray-800">
@@ -667,6 +667,72 @@ const Households = () => {
                                     </table>
                                 </div>
 
+                                {/* Mobile household cards */}
+                                <div className="divide-y divide-gray-100 md:hidden dark:divide-gray-800/40">
+                                    {households.map((h) => (
+                                        <div key={h._id} className="px-5 py-4">
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="font-bold text-sm text-indigo-600 dark:text-indigo-400">
+                                                        B{h.building} · Wing {h.wing} · Flat {h.flatNumber}
+                                                    </div>
+                                                    <div className="mt-1 font-semibold text-sm text-gray-700 dark:text-gray-300">
+                                                        {h.headOfFamily}
+                                                    </div>
+                                                    <div className="mt-0.5 text-xs text-gray-500 font-medium">
+                                                        {h.phone || "—"}
+                                                    </div>
+                                                    {h.note && (
+                                                        <div className="mt-0.5 truncate text-[11px] text-gray-400">{h.note}</div>
+                                                    )}
+                                                </div>
+                                                <div className="shrink-0">
+                                                    <span className={`inline-flex items-center rounded-lg px-2.5 py-1 text-[11px] font-semibold ${
+                                                        h.active
+                                                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400"
+                                                            : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                                                    }`}>
+                                                        {h.active ? "ACTIVE" : "INACTIVE"}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="mt-3 flex items-center justify-between gap-2">
+                                                <span className="inline-flex items-center rounded-lg bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 dark:bg-violet-950/20 dark:text-violet-400">
+                                                    {h.memberCount} {h.memberCount === 1 ? "person" : "people"}
+                                                </span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <button
+                                                        onClick={() => openEditModal(h)}
+                                                        title="Edit household"
+                                                        aria-label="Edit household"
+                                                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-indigo-600 transition-colors dark:border-gray-800 dark:hover:bg-gray-800"
+                                                    >
+                                                        <Edit2 className="h-4.5 w-4.5" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleToggleActive(h)}
+                                                        title={h.active ? "Deactivate household" : "Activate household"}
+                                                        aria-label={h.active ? "Deactivate household" : "Activate household"}
+                                                        className={`flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 transition-colors dark:border-gray-800 ${
+                                                            h.active ? "text-gray-500 hover:bg-amber-50 hover:text-amber-600" : "text-gray-500 hover:bg-emerald-50 hover:text-emerald-600"
+                                                        }`}
+                                                    >
+                                                        <Power className="h-4.5 w-4.5" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(h._id)}
+                                                        title="Delete household"
+                                                        aria-label="Delete household"
+                                                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-500 transition-colors dark:border-gray-800 dark:hover:bg-red-950/20"
+                                                    >
+                                                        <Trash2 className="h-4.5 w-4.5" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
                                 {pages > 1 && (
                                     <div className="flex items-center justify-between border-t border-gray-100 px-6 py-4 dark:border-gray-800">
                                         <span className="text-xs text-gray-500">Page {page} of {pages}</span>
@@ -720,84 +786,149 @@ const Households = () => {
                                 <p className="text-xs text-gray-400 mt-1">Add a building & wing with flat ranges (e.g. 1-20, 101-120) to auto-generate and track remaining flats.</p>
                             </div>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left text-sm border-collapse">
-                                    <thead>
-                                        <tr className="bg-gray-50/50 text-[11px] font-bold uppercase tracking-wider text-gray-400 border-b border-gray-100 dark:bg-gray-800/20 dark:border-gray-800">
-                                            <th className="px-6 py-4">Building & Wing</th>
-                                            <th className="px-6 py-4">Flats (Ranges)</th>
-                                            <th className="px-6 py-4">Registered</th>
-                                            <th className="px-6 py-4">Remaining</th>
-                                            <th className="px-6 py-4">People</th>
-                                            <th className="px-6 py-4">Unregistered Flats</th>
-                                            <th className="px-6 py-4 text-center">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800/40">
-                                        {configs.map((config) => {
-                                            const stats = wingStatsMap[`${config.building}-${config.wing}`] || {
-                                                registeredFlats: 0,
-                                                remainingFlats: 0,
-                                                people: 0
-                                            };
-                                            const unregistered = unregisteredMap[`${config.building}-${config.wing}`] || [];
-                                            return (
-                                                <tr key={config._id} className="hover:bg-gray-50/30 dark:hover:bg-gray-800/10">
-                                                    <td className="px-6 py-4.5 font-bold text-xs text-indigo-600 dark:text-indigo-400">
-                                                        Building {config.building} · Wing {config.wing}
-                                                    </td>
-                                                    <td className="px-6 py-4.5">
-                                                        <div className="font-semibold text-gray-700 dark:text-gray-300">
-                                                            {config.expectedFlats}
-                                                        </div>
-                                                        {Array.isArray(config.flatRanges) && config.flatRanges.length > 0 && (
-                                                            <div className="text-[10px] font-medium text-gray-400 mt-0.5">
-                                                                {config.flatRanges.map((r) => `${r.start}-${r.end}`).join(" · ")}
+                            <>
+                                <div className="hidden overflow-x-auto md:block">
+                                    <table className="w-full text-left text-sm border-collapse">
+                                        <thead>
+                                            <tr className="bg-gray-50/50 text-[11px] font-bold uppercase tracking-wider text-gray-400 border-b border-gray-100 dark:bg-gray-800/20 dark:border-gray-800">
+                                                <th className="px-6 py-4">Building & Wing</th>
+                                                <th className="px-6 py-4">Flats (Ranges)</th>
+                                                <th className="px-6 py-4">Registered</th>
+                                                <th className="px-6 py-4">Remaining</th>
+                                                <th className="px-6 py-4">People</th>
+                                                <th className="px-6 py-4">Unregistered Flats</th>
+                                                <th className="px-6 py-4 text-center">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800/40">
+                                            {configs.map((config) => {
+                                                const stats = wingStatsMap[`${config.building}-${config.wing}`] || {
+                                                    registeredFlats: 0,
+                                                    remainingFlats: 0,
+                                                    people: 0
+                                                };
+                                                const unregistered = unregisteredMap[`${config.building}-${config.wing}`] || [];
+                                                return (
+                                                    <tr key={config._id} className="hover:bg-gray-50/30 dark:hover:bg-gray-800/10">
+                                                        <td className="px-6 py-4.5 font-bold text-xs text-indigo-600 dark:text-indigo-400">
+                                                            Building {config.building} · Wing {config.wing}
+                                                        </td>
+                                                        <td className="px-6 py-4.5">
+                                                            <div className="font-semibold text-gray-700 dark:text-gray-300">
+                                                                {config.expectedFlats}
                                                             </div>
-                                                        )}
-                                                    </td>
-                                                    <td className="px-6 py-4.5 font-semibold text-emerald-600 dark:text-emerald-400">
-                                                        {stats.registeredFlats}
-                                                    </td>
-                                                    <td className={`px-6 py-4.5 font-semibold ${stats.remainingFlats > 0 ? "text-amber-600 dark:text-amber-400" : "text-gray-400"}`}>
-                                                        {stats.remainingFlats}
-                                                    </td>
-                                                    <td className="px-6 py-4.5 font-semibold text-violet-600 dark:text-violet-400">
-                                                        {stats.people}
-                                                    </td>
-                                                    <td className="px-6 py-4.5">
-                                                        {unregistered.length > 0 ? (
-                                                            <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
-                                                                Flats: {unregistered.join(", ")}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                                                                All flats registered
-                                                            </span>
-                                                        )}
-                                                    </td>
-                                                    <td className="px-6 py-4.5">
-                                                        <div className="flex items-center justify-center gap-2">
-                                                            <button
-                                                                onClick={() => openConfigEditModal(config)}
-                                                                className="rounded-lg p-1 text-gray-400 hover:bg-gray-50 hover:text-indigo-600 transition-colors"
-                                                            >
-                                                                <Edit2 className="h-4 w-4" />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleConfigDelete(config._id)}
-                                                                className="rounded-lg p-1 text-gray-400 hover:bg-gray-50 hover:text-red-500 transition-colors"
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </button>
+                                                            {Array.isArray(config.flatRanges) && config.flatRanges.length > 0 && (
+                                                                <div className="text-[10px] font-medium text-gray-400 mt-0.5">
+                                                                    {config.flatRanges.map((r) => `${r.start}-${r.end}`).join(" · ")}
+                                                                </div>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-6 py-4.5 font-semibold text-emerald-600 dark:text-emerald-400">
+                                                            {stats.registeredFlats}
+                                                        </td>
+                                                        <td className={`px-6 py-4.5 font-semibold ${stats.remainingFlats > 0 ? "text-amber-600 dark:text-amber-400" : "text-gray-400"}`}>
+                                                            {stats.remainingFlats}
+                                                        </td>
+                                                        <td className="px-6 py-4.5 font-semibold text-violet-600 dark:text-violet-400">
+                                                            {stats.people}
+                                                        </td>
+                                                        <td className="px-6 py-4.5">
+                                                            {unregistered.length > 0 ? (
+                                                                <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                                                                    Flats: {unregistered.join(", ")}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                                                                    All flats registered
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-6 py-4.5">
+                                                            <div className="flex items-center justify-center gap-2">
+                                                                <button
+                                                                    onClick={() => openConfigEditModal(config)}
+                                                                    className="rounded-lg p-1 text-gray-400 hover:bg-gray-50 hover:text-indigo-600 transition-colors"
+                                                                >
+                                                                    <Edit2 className="h-4 w-4" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleConfigDelete(config._id)}
+                                                                    className="rounded-lg p-1 text-gray-400 hover:bg-gray-50 hover:text-red-500 transition-colors"
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Mobile building config cards */}
+                                <div className="divide-y divide-gray-100 md:hidden dark:divide-gray-800/40">
+                                    {configs.map((config) => {
+                                        const stats = wingStatsMap[`${config.building}-${config.wing}`] || {
+                                            registeredFlats: 0,
+                                            remainingFlats: 0,
+                                            people: 0
+                                        };
+                                        const unregistered = unregisteredMap[`${config.building}-${config.wing}`] || [];
+                                        return (
+                                            <div key={config._id} className="px-5 py-4">
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="font-bold text-sm text-indigo-600 dark:text-indigo-400">
+                                                            Building {config.building} · Wing {config.wing}
                                                         </div>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
+                                                        <div className="mt-1 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                                            {config.expectedFlats} flats
+                                                            {Array.isArray(config.flatRanges) && config.flatRanges.length > 0 && (
+                                                                <span className="text-[11px] font-medium text-gray-400">
+                                                                    {" "}· {config.flatRanges.map((r) => `${r.start}-${r.end}`).join(" · ")}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="mt-0.5 text-[11px] text-gray-400">
+                                                            {stats.people} people
+                                                        </div>
+                                                        <div className={`mt-1 text-[11px] font-medium ${unregistered.length > 0 ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+                                                            {unregistered.length > 0 ? `Unregistered: ${unregistered.join(", ")}` : "All flats registered"}
+                                                        </div>
+                                                    </div>
+                                                    <div className="shrink-0 text-right">
+                                                        <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                                                            {stats.registeredFlats} registered
+                                                        </div>
+                                                        <div className={`mt-0.5 text-xs font-semibold ${stats.remainingFlats > 0 ? "text-amber-600 dark:text-amber-400" : "text-gray-400"}`}>
+                                                            {stats.remainingFlats} remaining
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="mt-3 flex justify-end gap-1.5">
+                                                    <button
+                                                        onClick={() => openConfigEditModal(config)}
+                                                        title="Edit configuration"
+                                                        aria-label="Edit configuration"
+                                                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-indigo-600 transition-colors dark:border-gray-800 dark:hover:bg-gray-800"
+                                                    >
+                                                        <Edit2 className="h-4.5 w-4.5" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleConfigDelete(config._id)}
+                                                        title="Delete configuration"
+                                                        aria-label="Delete configuration"
+                                                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-500 transition-colors dark:border-gray-800 dark:hover:bg-red-950/20"
+                                                    >
+                                                        <Trash2 className="h-4.5 w-4.5" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </>
                         )}
                     </div>
                 </>
@@ -821,7 +952,7 @@ const Households = () => {
 
                         <form onSubmit={handleFormSubmit}>
                             <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-                                <div className="grid grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                                     <div>
                                         <label className="text-xs font-bold uppercase tracking-wider text-gray-400">Building *</label>
                                         <input
@@ -876,7 +1007,7 @@ const Households = () => {
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <div>
                                         <label className="text-xs font-bold uppercase tracking-wider text-gray-400">Phone Number</label>
                                         <input
@@ -903,7 +1034,7 @@ const Households = () => {
                                     </div>
                                 </div>
 
-                                <div className="col-span-2">
+                                <div>
                                     <label className="text-xs font-bold uppercase tracking-wider text-gray-400">Note / Remarks</label>
                                     <textarea
                                         name="note"
@@ -930,18 +1061,18 @@ const Households = () => {
                                 )}
                             </div>
 
-                            <div className="flex items-center justify-end gap-3 border-t border-gray-100 bg-gray-50 px-6 py-4 rounded-b-3xl dark:border-gray-800 dark:bg-gray-950">
+                            <div className="flex flex-col-reverse gap-2 border-t border-gray-100 bg-gray-50 px-6 py-4 rounded-b-3xl sm:flex-row sm:items-center sm:justify-end sm:gap-3 dark:border-gray-800 dark:bg-gray-950">
                                 <button
                                     type="button"
                                     onClick={() => setIsOpen(false)}
-                                    className="rounded-xl border border-gray-200 bg-white py-2.5 px-4 text-xs font-semibold text-gray-500 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900"
+                                    className="w-full rounded-xl border border-gray-200 bg-white py-2.5 px-4 text-xs font-semibold text-gray-500 hover:bg-gray-50 sm:w-auto dark:border-gray-800 dark:bg-gray-900"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={formLoading}
-                                    className="flex items-center gap-1.5 rounded-xl bg-indigo-600 py-2.5 px-4 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+                                    className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-indigo-600 py-2.5 px-4 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 sm:w-auto"
                                 >
                                     {formLoading ? (
                                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
@@ -973,7 +1104,7 @@ const Households = () => {
 
                         <form onSubmit={handleConfigSubmit}>
                             <div className="p-6 space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <div>
                                         <label className="text-xs font-bold uppercase tracking-wider text-gray-400">Building *</label>
                                         <input
@@ -1059,18 +1190,18 @@ const Households = () => {
                                 </div>
                             </div>
 
-                            <div className="flex items-center justify-end gap-3 border-t border-gray-100 bg-gray-50 px-6 py-4 rounded-b-3xl dark:border-gray-800 dark:bg-gray-950">
+                            <div className="flex flex-col-reverse gap-2 border-t border-gray-100 bg-gray-50 px-6 py-4 rounded-b-3xl sm:flex-row sm:items-center sm:justify-end sm:gap-3 dark:border-gray-800 dark:bg-gray-950">
                                 <button
                                     type="button"
                                     onClick={() => setConfigModalOpen(false)}
-                                    className="rounded-xl border border-gray-200 bg-white py-2.5 px-4 text-xs font-semibold text-gray-500 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900"
+                                    className="w-full rounded-xl border border-gray-200 bg-white py-2.5 px-4 text-xs font-semibold text-gray-500 hover:bg-gray-50 sm:w-auto dark:border-gray-800 dark:bg-gray-900"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={configFormLoading}
-                                    className="flex items-center gap-1.5 rounded-xl bg-indigo-600 py-2.5 px-4 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+                                    className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-indigo-600 py-2.5 px-4 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 sm:w-auto"
                                 >
                                     {configFormLoading ? (
                                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>

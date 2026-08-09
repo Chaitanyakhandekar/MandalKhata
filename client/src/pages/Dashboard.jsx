@@ -200,7 +200,7 @@ const Dashboard = () => {
                         Here is a financial summary of your Ganesh Mandal's records
                     </p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                     <Link
                         to="/donations"
                         className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-md shadow-emerald-600/15 transition-all hover:bg-emerald-700"
@@ -541,48 +541,79 @@ const Dashboard = () => {
                         <p className="text-xs text-gray-400">Configure buildings & wings to track registered vs remaining flats.</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm border-collapse">
-                            <thead>
-                                <tr className="bg-gray-50/50 text-[11px] font-bold uppercase tracking-wider text-gray-400 border-b border-gray-100 dark:bg-gray-800/20 dark:border-gray-800">
-                                    <th className="px-6 py-4">Building</th>
-                                    <th className="px-6 py-4">Wings</th>
-                                    <th className="px-6 py-4">Expected Flats</th>
-                                    <th className="px-6 py-4">Registered</th>
-                                    <th className="px-6 py-4">Remaining Flats</th>
-                                    <th className="px-6 py-4">Households</th>
-                                    <th className="px-6 py-4">Total People</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800/40">
-                                {stats.residentStats.buildings.map((b) => (
-                                    <tr key={b.building} className="hover:bg-gray-50/30 dark:hover:bg-gray-800/10">
-                                        <td className="px-6 py-4.5 font-bold text-xs text-indigo-600 dark:text-indigo-400">
-                                            Building {b.building}
-                                        </td>
-                                        <td className="px-6 py-4.5 text-xs font-medium text-gray-500">
-                                            {b.wings ? b.wings.length : (stats.residentStats.wings.filter((w) => w.building === b.building).length)} wings
-                                        </td>
-                                        <td className="px-6 py-4.5 font-semibold text-gray-700 dark:text-gray-300">
-                                            {b.expectedFlats}
-                                        </td>
-                                        <td className="px-6 py-4.5 font-semibold text-emerald-600 dark:text-emerald-400">
-                                            {b.registeredFlats}
-                                        </td>
-                                        <td className={`px-6 py-4.5 font-semibold ${b.remainingFlats > 0 ? "text-amber-600 dark:text-amber-400" : "text-gray-400"}`}>
-                                            {b.remainingFlats}
-                                        </td>
-                                        <td className="px-6 py-4.5 font-semibold text-gray-700 dark:text-gray-300">
-                                            {b.households}
-                                        </td>
-                                        <td className="px-6 py-4.5 font-semibold text-violet-600 dark:text-violet-400">
-                                            {b.people}
-                                        </td>
+                    <>
+                        <div className="hidden overflow-x-auto md:block">
+                            <table className="w-full text-left text-sm border-collapse">
+                                <thead>
+                                    <tr className="bg-gray-50/50 text-[11px] font-bold uppercase tracking-wider text-gray-400 border-b border-gray-100 dark:bg-gray-800/20 dark:border-gray-800">
+                                        <th className="px-6 py-4">Building</th>
+                                        <th className="px-6 py-4">Wings</th>
+                                        <th className="px-6 py-4">Expected Flats</th>
+                                        <th className="px-6 py-4">Registered</th>
+                                        <th className="px-6 py-4">Remaining Flats</th>
+                                        <th className="px-6 py-4">Households</th>
+                                        <th className="px-6 py-4">Total People</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-gray-800/40">
+                                    {stats.residentStats.buildings.map((b) => (
+                                        <tr key={b.building} className="hover:bg-gray-50/30 dark:hover:bg-gray-800/10">
+                                            <td className="px-6 py-4.5 font-bold text-xs text-indigo-600 dark:text-indigo-400">
+                                                Building {b.building}
+                                            </td>
+                                            <td className="px-6 py-4.5 text-xs font-medium text-gray-500">
+                                                {b.wings ? b.wings.length : (stats.residentStats.wings.filter((w) => w.building === b.building).length)} wings
+                                            </td>
+                                            <td className="px-6 py-4.5 font-semibold text-gray-700 dark:text-gray-300">
+                                                {b.expectedFlats}
+                                            </td>
+                                            <td className="px-6 py-4.5 font-semibold text-emerald-600 dark:text-emerald-400">
+                                                {b.registeredFlats}
+                                            </td>
+                                            <td className={`px-6 py-4.5 font-semibold ${b.remainingFlats > 0 ? "text-amber-600 dark:text-amber-400" : "text-gray-400"}`}>
+                                                {b.remainingFlats}
+                                            </td>
+                                            <td className="px-6 py-4.5 font-semibold text-gray-700 dark:text-gray-300">
+                                                {b.households}
+                                            </td>
+                                            <td className="px-6 py-4.5 font-semibold text-violet-600 dark:text-violet-400">
+                                                {b.people}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Mobile building stats cards */}
+                        <div className="divide-y divide-gray-100 md:hidden dark:divide-gray-800/40">
+                            {stats.residentStats.buildings.map((b) => (
+                                <div key={b.building} className="flex items-start justify-between gap-3 px-5 py-4">
+                                    <div className="min-w-0">
+                                        <div className="font-bold text-sm text-indigo-600 dark:text-indigo-400">
+                                            Building {b.building}
+                                        </div>
+                                        <div className="mt-1 text-xs font-medium text-gray-500">
+                                            {b.wings ? b.wings.length : (stats.residentStats.wings.filter((w) => w.building === b.building).length)} wings · {b.households} households
+                                        </div>
+                                        <div className="mt-0.5 text-[11px] text-gray-400">
+                                            {b.people} people
+                                        </div>
+                                    </div>
+                                    <div className="shrink-0 text-right">
+                                        <div className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                            <span className="text-emerald-600 dark:text-emerald-400">{b.registeredFlats}</span>
+                                            <span className="text-gray-400"> / </span>
+                                            {b.expectedFlats} flats
+                                        </div>
+                                        <div className={`mt-1 inline-flex items-center rounded-lg px-2 py-0.5 text-[11px] font-semibold ${b.remainingFlats > 0 ? "bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"}`}>
+                                            {b.remainingFlats} remaining
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </>
                 )}
 
                 {/* Unregistered flats list */}
@@ -611,7 +642,7 @@ const Dashboard = () => {
                             <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-2">
                                 Wing-wise Statistics
                             </p>
-                            <div className="overflow-x-auto">
+                            <div className="hidden overflow-x-auto md:block">
                                 <table className="w-full text-left text-sm border-collapse">
                                     <thead>
                                         <tr className="bg-gray-50/50 text-[11px] font-bold uppercase tracking-wider text-gray-400 border-b border-gray-100 dark:bg-gray-800/20 dark:border-gray-800">
@@ -649,6 +680,29 @@ const Dashboard = () => {
                                     </tbody>
                                 </table>
                             </div>
+                            {/* Mobile wing stats cards */}
+                            <div className="divide-y divide-gray-100 md:hidden dark:divide-gray-800/40">
+                                {stats.residentStats.wings.map((w) => (
+                                    <div key={`${w.building}-${w.wing}`} className="flex items-center justify-between gap-3 py-3">
+                                        <div className="min-w-0">
+                                            <div className="font-bold text-xs text-indigo-600 dark:text-indigo-400">
+                                                Building {w.building} · Wing {w.wing}
+                                            </div>
+                                            <div className="mt-0.5 text-[11px] text-gray-400">
+                                                {w.people} people · {w.registeredFlats} households
+                                            </div>
+                                        </div>
+                                        <div className="shrink-0 text-right text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                            <span className="text-emerald-600 dark:text-emerald-400">{w.registeredFlats}</span>
+                                            <span className="text-gray-400"> / </span>
+                                            {w.expectedFlats}
+                                            <span className={`ml-1.5 ${w.remainingFlats > 0 ? "text-amber-600 dark:text-amber-400" : "text-gray-400"}`}>
+                                                · {w.remainingFlats} left
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 )}
@@ -668,7 +722,7 @@ const Dashboard = () => {
                             </p>
                         </div>
                     </div>
-                    <div className="flex gap-6">
+                    <div className="flex gap-4 sm:gap-6">
                         <div className="text-right">
                             <div className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
                                 {stats.mahaprasad.expectedAttendance}
@@ -705,7 +759,7 @@ const Dashboard = () => {
                     </Link>
                 </div>
 
-                <div className="overflow-x-auto">
+                <div className="hidden overflow-x-auto md:block">
                     {stats.recentActivity.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 text-center">
                             <Activity className="h-10 w-10 text-gray-300 mb-2" />
@@ -776,6 +830,59 @@ const Dashboard = () => {
                         </table>
                     )}
                 </div>
+
+                {/* Mobile recent activity cards */}
+                {stats.recentActivity.length > 0 && (
+                    <div className="divide-y divide-gray-100 md:hidden dark:divide-gray-800/40">
+                        {stats.recentActivity.map((act) => (
+                            <div key={act._id} className="px-5 py-4">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="font-semibold text-sm text-gray-700 dark:text-gray-300">
+                                            {act.type === "donation" ? `Donation: ${act.donorName}` : act.title}
+                                        </div>
+                                        {act.type === "donation" && act.donorType && (
+                                            <div className="mt-0.5 text-[11px] text-gray-400">
+                                                {act.donorType === "resident" ? "Resident Household" : act.donorType === "external" ? "External Donor" : "Regular"}
+                                            </div>
+                                        )}
+                                        {act.note && (
+                                            <div className="mt-0.5 truncate text-[11px] text-gray-400">
+                                                {act.note}
+                                            </div>
+                                        )}
+                                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                                            <span
+                                                className={`inline-flex items-center rounded-lg px-2 py-0.5 text-[11px] font-semibold ${act.type === "donation"
+                                                    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400"
+                                                    : "bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400"
+                                                    }`}
+                                            >
+                                                {act.type === "donation" ? "Donation" : "Expense"}
+                                            </span>
+                                            <span className="text-[11px] text-gray-400">
+                                                {act.type === "donation"
+                                                    ? `Payment: ${act.paymentMethod.toUpperCase()}`
+                                                    : act.category}
+                                            </span>
+                                            <span className="flex items-center gap-1 text-[11px] text-gray-400">
+                                                <CalendarDays className="h-3 w-3" />
+                                                {new Date(act.date).toLocaleDateString("en-IN", {
+                                                    day: "numeric",
+                                                    month: "short",
+                                                    year: "numeric"
+                                                })}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className={`shrink-0 text-sm font-bold ${act.type === "donation" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                                        {act.type === "donation" ? "+" : "-"} ₹{act.amount.toLocaleString("en-IN")}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </Layout>
     );

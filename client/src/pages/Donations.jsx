@@ -637,7 +637,7 @@ const Donations = () => {
                     </div>
                 ) : (
                     <>
-                        <div className="overflow-x-auto">
+                        <div className="hidden overflow-x-auto md:block">
                             <table className="w-full text-left text-sm border-collapse">
                                 <thead>
                                     <tr className="bg-gray-50/50 text-[11px] font-bold uppercase tracking-wider text-gray-400 border-b border-gray-100 dark:bg-gray-800/20 dark:border-gray-800">
@@ -743,6 +743,100 @@ const Donations = () => {
                             </table>
                         </div>
 
+                        {/* Mobile donation cards */}
+                        <div className="divide-y divide-gray-100 md:hidden dark:divide-gray-800/40">
+                            {donations.map((don) => {
+                                const badge = getDonorTypeBadge(don);
+                                return (
+                                    <div key={don._id} className="px-5 py-4">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="min-w-0 flex-1">
+                                                <div className="font-bold text-xs text-indigo-600 dark:text-indigo-400">
+                                                    {don.receiptNumber}
+                                                </div>
+                                                <div className="mt-0.5 font-semibold text-sm text-gray-700 dark:text-gray-300">
+                                                    {don.donorName}
+                                                </div>
+                                                {don.household && (
+                                                    <div className="text-[11px] text-indigo-400 mt-0.5">
+                                                        B{don.household.building} · Wing {don.household.wing} · Flat {don.household.flatNumber}
+                                                        <span className="text-gray-400 ml-1">
+                                                            · {don.household.memberCount} {don.household.memberCount === 1 ? "member" : "members"}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {don.externalDonor && don.externalDonor.organizationName && (
+                                                    <div className="text-[11px] text-gray-400 truncate mt-0.5">
+                                                        {don.externalDonor.organizationName}
+                                                    </div>
+                                                )}
+                                                {don.note && (
+                                                    <div className="text-[11px] text-gray-400 truncate mt-0.5">
+                                                        {don.note}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="shrink-0 text-right">
+                                                <div className="font-bold text-sm text-emerald-600 dark:text-emerald-400">
+                                                    {formatCurrency(don.amount)}
+                                                </div>
+                                                <div className="mt-0.5 text-[11px] text-gray-400">
+                                                    {new Date(don.date).toLocaleDateString("en-IN", {
+                                                        day: "numeric",
+                                                        month: "short",
+                                                        year: "numeric"
+                                                    })}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                                            <span className={`inline-flex items-center rounded-lg px-2.5 py-0.5 text-[11px] font-semibold ${badge.classes}`}>
+                                                {badge.label}
+                                            </span>
+                                            <span
+                                                className={`inline-flex items-center rounded-lg px-2.5 py-0.5 text-[11px] font-semibold ${
+                                                    don.paymentMethod === "cash"
+                                                        ? "bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400"
+                                                        : don.paymentMethod === "upi"
+                                                        ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400"
+                                                        : "bg-sky-50 text-sky-700 dark:bg-sky-950/20 dark:text-sky-400"
+                                                }`}
+                                            >
+                                                {don.paymentMethod.toUpperCase()}
+                                            </span>
+                                            <div className="ml-auto flex items-center gap-1.5">
+                                                <button
+                                                    onClick={() => openEditModal(don)}
+                                                    title="Edit donation"
+                                                    aria-label="Edit donation"
+                                                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-indigo-600 transition-colors dark:border-gray-800 dark:hover:bg-gray-800"
+                                                >
+                                                    <Edit2 className="h-4.5 w-4.5" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(don._id)}
+                                                    title="Delete donation"
+                                                    aria-label="Delete donation"
+                                                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-500 transition-colors dark:border-gray-800 dark:hover:bg-red-950/20"
+                                                >
+                                                    <Trash2 className="h-4.5 w-4.5" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            {/* Mobile total row */}
+                            <div className="flex items-center justify-between bg-gray-50/80 px-5 py-4 dark:bg-gray-800/20">
+                                <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    Total ({total} {total === 1 ? "donation" : "donations"})
+                                </span>
+                                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                                    {formatCurrency(totalAmount)}
+                                </span>
+                            </div>
+                        </div>
+
                         {/* Pagination Layout */}
                         {pages > 1 && (
                             <div className="flex items-center justify-between border-t border-gray-100 px-6 py-4 dark:border-gray-800">
@@ -796,7 +890,7 @@ const Donations = () => {
                                     <label className="text-xs font-bold uppercase tracking-wider text-gray-400">
                                         Donor Type *
                                     </label>
-                                    <div className="mt-2 grid grid-cols-2 gap-3">
+                                    <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
                                         <button
                                             type="button"
                                             onClick={() => setDonorType("resident")}
@@ -831,7 +925,7 @@ const Donations = () => {
                                             <label className="text-xs font-bold uppercase tracking-wider text-gray-400">
                                                 Resident Donation Option *
                                             </label>
-                                            <div className="mt-2 grid grid-cols-2 gap-3">
+                                            <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
                                                 <button
                                                     type="button"
                                                     onClick={() => { setResidentMode("select"); setConflictHousehold(null); setConflictMessage(""); }}
@@ -924,10 +1018,10 @@ const Donations = () => {
 
                                             {/* Selected Household Card */}
                                             {selectedHousehold && (
-                                                <div className="mt-3 flex items-center justify-between rounded-xl border border-indigo-200 bg-indigo-50/50 px-4 py-3 dark:border-indigo-900/50 dark:bg-indigo-950/20">
+                                                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-indigo-200 bg-indigo-50/50 px-4 py-3 dark:border-indigo-900/50 dark:bg-indigo-950/20">
                                                     <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <HomeIcon className="h-4 w-4 text-indigo-500" />
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <HomeIcon className="h-4 w-4 shrink-0 text-indigo-500" />
                                                             <span className="text-sm font-bold text-indigo-700 dark:text-indigo-300">
                                                                 Building {selectedHousehold.building} · Wing {selectedHousehold.wing} · Flat {selectedHousehold.flatNumber}
                                                             </span>
@@ -952,7 +1046,7 @@ const Donations = () => {
                                                     </div>
                                                 )}
 
-                                                <div className="grid grid-cols-3 gap-3">
+                                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                                                     <div>
                                                         <label className="text-xs font-bold uppercase tracking-wider text-gray-400">Building *</label>
                                                         <select
@@ -996,7 +1090,7 @@ const Donations = () => {
                                                     </div>
                                                 </div>
 
-                                                <div className="grid grid-cols-2 gap-4">
+                                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                                     <div>
                                                         <label className="text-xs font-bold uppercase tracking-wider text-gray-400">Occupant Name *</label>
                                                         <input
@@ -1019,7 +1113,7 @@ const Donations = () => {
                                                     </div>
                                                 </div>
 
-                                                <div className="grid grid-cols-2 gap-4">
+                                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                                     <div>
                                                         <label className="text-xs font-bold uppercase tracking-wider text-gray-400">Family Member Count *</label>
                                                         <input
@@ -1080,7 +1174,7 @@ const Donations = () => {
                                 ) : (
                                     <>
                                         {/* External Donor preference toggle */}
-                                        <div className="flex gap-2">
+                                        <div className="flex flex-wrap gap-2">
                                             <button
                                                 type="button"
                                                 onClick={() => setDonorMode("existing")}
@@ -1172,7 +1266,7 @@ const Donations = () => {
                                                 </div>
 
                                                 {selectedDonor && (
-                                                    <div className="mt-3 flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50/50 px-4 py-3 dark:border-amber-900/40 dark:bg-amber-950/20">
+                                                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50/50 px-4 py-3 dark:border-amber-900/40 dark:bg-amber-950/20">
                                                         <div>
                                                             <div className="text-sm font-bold text-amber-800 dark:text-amber-300">
                                                                 {selectedDonor.donorName}
@@ -1206,7 +1300,7 @@ const Donations = () => {
                                                     />
                                                 </div>
 
-                                                <div className="grid grid-cols-2 gap-4">
+                                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                                     <div>
                                                         <label className="text-xs font-bold uppercase tracking-wider text-gray-400">
                                                             Donor Type
@@ -1236,7 +1330,7 @@ const Donations = () => {
                                                     </div>
                                                 </div>
 
-                                                <div className="grid grid-cols-2 gap-4">
+                                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                                     <div>
                                                         <label className="text-xs font-bold uppercase tracking-wider text-gray-400">
                                                             Organization / Business
@@ -1267,7 +1361,7 @@ const Donations = () => {
                                     </>
                                 )}
 
-                                <div className="grid grid-cols-2 gap-4 border-t border-gray-100 pt-4 dark:border-gray-800">
+                                <div className="grid grid-cols-1 gap-4 border-t border-gray-100 pt-4 sm:grid-cols-2 dark:border-gray-800">
                                     <div>
                                         <label className="text-xs font-bold uppercase tracking-wider text-gray-400">
                                             Amount (₹) *
@@ -1331,18 +1425,18 @@ const Donations = () => {
                             </div>
 
                             {/* Modal Footer actions */}
-                            <div className="flex items-center justify-end gap-3 border-t border-gray-100 bg-gray-50 px-6 py-4 rounded-b-3xl dark:border-gray-800 dark:bg-gray-950">
+                            <div className="flex flex-col-reverse gap-2 border-t border-gray-100 bg-gray-50 px-6 py-4 rounded-b-3xl sm:flex-row sm:items-center sm:justify-end sm:gap-3 dark:border-gray-800 dark:bg-gray-950">
                                 <button
                                     type="button"
                                     onClick={() => setIsOpen(false)}
-                                    className="rounded-xl border border-gray-200 bg-white py-2.5 px-4 text-xs font-semibold text-gray-500 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900"
+                                    className="w-full rounded-xl border border-gray-200 bg-white py-2.5 px-4 text-xs font-semibold text-gray-500 hover:bg-gray-50 sm:w-auto dark:border-gray-800 dark:bg-gray-900"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={formLoading}
-                                    className="flex items-center gap-1.5 rounded-xl bg-indigo-600 py-2.5 px-4 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+                                    className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-indigo-600 py-2.5 px-4 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 sm:w-auto"
                                 >
                                     {formLoading ? (
                                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>

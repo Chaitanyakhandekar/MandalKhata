@@ -169,21 +169,21 @@ const Mahaprasad = () => {
                             </div>
 
                             {/* Population summary */}
-                            <div className="mb-6 grid grid-cols-2 gap-4">
-                                <div className="rounded-2xl border border-gray-100 bg-gray-50/50 p-5 text-center dark:border-gray-800 dark:bg-gray-950">
+                            <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4">
+                                <div className="rounded-2xl border border-gray-100 bg-gray-50/50 p-4 text-center sm:p-5 dark:border-gray-800 dark:bg-gray-950">
                                     <HomeIcon className="mx-auto h-6 w-6 text-indigo-500 mb-2" />
-                                    <div className="text-3xl font-bold text-gray-900 dark:text-white">{planning.registeredHouseholds}</div>
+                                    <div className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{planning.registeredHouseholds}</div>
                                     <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mt-1">Registered Households</div>
                                 </div>
-                                <div className="rounded-2xl border border-gray-100 bg-gray-50/50 p-5 text-center dark:border-gray-800 dark:bg-gray-950">
+                                <div className="rounded-2xl border border-gray-100 bg-gray-50/50 p-4 text-center sm:p-5 dark:border-gray-800 dark:bg-gray-950">
                                     <Users className="mx-auto h-6 w-6 text-violet-500 mb-2" />
-                                    <div className="text-3xl font-bold text-gray-900 dark:text-white">{planning.totalPeople}</div>
+                                    <div className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{planning.totalPeople}</div>
                                     <div className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mt-1">Total Resident People</div>
                                 </div>
                             </div>
 
                             {/* Configurable percentages */}
-                            <div className="grid grid-cols-2 gap-4 mb-6">
+                            <div className="grid grid-cols-1 gap-4 mb-6 sm:grid-cols-2">
                                 <div>
                                     <label className="text-xs font-bold uppercase tracking-wider text-gray-400">
                                         Expected Attendance (%)
@@ -217,8 +217,8 @@ const Mahaprasad = () => {
                             </div>
 
                             {/* Calculation result */}
-                            <div className="rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 p-6 text-white shadow-lg shadow-indigo-600/20">
-                                <div className="grid grid-cols-2 gap-6">
+                            <div className="rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 p-5 text-white shadow-lg shadow-indigo-600/20 sm:p-6">
+                                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6">
                                     <div>
                                         <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-200">
                                             Expected Attendance

@@ -5,5 +5,23 @@
 html, body, #root {
     height: 100%;
     margin: 0;
-    overflow: hidden;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    overscroll-behavior-y: none;
+}
+
+/* Mobile-first: 16px form controls prevent iOS Safari auto-zoom on focus
+   and keep inputs touch-friendly on small screens. Desktop keeps the
+   design's finer typography. */
+@media (max-width: 767px) {
+    input, select, textarea {
+        font-size: 16px !important;
+    }
 }

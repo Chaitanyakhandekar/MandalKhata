@@ -139,7 +139,7 @@ const Settings = () => {
                         Yearly Finance Books
                     </h3>
 
-                    <div className="overflow-x-auto">
+                    <div className="hidden overflow-x-auto md:block">
                         <table className="w-full text-left text-sm border-collapse">
                             <thead>
                                 <tr className="bg-gray-50/50 text-[11px] font-bold uppercase tracking-wider text-gray-400 border-b border-gray-100 dark:bg-gray-800/20 dark:border-gray-800">
@@ -208,6 +208,65 @@ const Settings = () => {
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+
+                    {/* Mobile festival year cards */}
+                    <div className="divide-y divide-gray-100 md:hidden dark:divide-gray-800/40">
+                        {years.map((y) => (
+                            <div key={y._id} className="flex items-center justify-between gap-3 py-4">
+                                <div className="min-w-0 flex-1">
+                                    <div className="font-bold text-sm text-gray-700 dark:text-gray-300">
+                                        Year: {y.year}
+                                    </div>
+                                    <div className="mt-1">
+                                        {y.isActive ? (
+                                            <span className="inline-flex items-center rounded-lg bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-400">
+                                                Active
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center rounded-lg bg-gray-50 px-2.5 py-0.5 text-xs font-semibold text-gray-500 dark:bg-gray-950/30 dark:text-gray-500">
+                                                Inactive
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex shrink-0 items-center gap-2">
+                                    {y.isActive ? (
+                                        <button
+                                            disabled
+                                            aria-label="Active year"
+                                            className="text-indigo-600 opacity-55 cursor-not-allowed"
+                                        >
+                                            <ToggleRight className="h-8 w-8" />
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => handleActivateYear(y._id, y.year)}
+                                            aria-label={`Activate year ${y.year}`}
+                                            className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 text-gray-400 hover:border-indigo-300 hover:text-indigo-500 transition-colors dark:border-gray-800"
+                                        >
+                                            <ToggleLeft className="h-6 w-6" />
+                                        </button>
+                                    )}
+                                    {y.isActive ? (
+                                        <span
+                                            title="Active year cannot be deleted"
+                                            className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-100 text-gray-300 dark:border-gray-800 dark:text-gray-600"
+                                        >
+                                            <Trash2 className="h-4 w-4 opacity-30 cursor-not-allowed" />
+                                        </span>
+                                    ) : (
+                                        <button
+                                            onClick={() => handleDeleteYear(y._id, y.year)}
+                                            aria-label={`Delete year ${y.year}`}
+                                            className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 text-gray-400 hover:border-red-300 hover:text-red-500 transition-colors dark:border-gray-800"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
                     </div>
 
                     <div className="mt-6 flex items-center gap-2 rounded-xl bg-amber-50 p-4 text-amber-800 dark:bg-amber-950/20 dark:text-amber-500">
