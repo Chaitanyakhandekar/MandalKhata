@@ -8,7 +8,10 @@ import {
     BarChart3,
     Settings,
     X,
-    FolderKanban
+    FolderKanban,
+    Home as HomeIcon,
+    Building2,
+    UtensilsCrossed
 } from "lucide-react";
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
@@ -16,9 +19,12 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
     const menuItems = [
         { name: "Dashboard", path: "/", icon: LayoutDashboard },
+        { name: "Households", path: "/households", icon: HomeIcon },
+        { name: "External Donors", path: "/external-donors", icon: Building2 },
         { name: "Donations", path: "/donations", icon: Coins },
         { name: "Expenses", path: "/expenses", icon: Receipt },
         { name: "Ledger", path: "/ledger", icon: BookOpen },
+        { name: "Mahaprasad", path: "/mahaprasad", icon: UtensilsCrossed },
         { name: "Reports", path: "/reports", icon: BarChart3 },
         { name: "Settings", path: "/settings", icon: Settings }
     ];

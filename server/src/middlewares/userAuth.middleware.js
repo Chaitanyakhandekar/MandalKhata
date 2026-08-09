@@ -8,8 +8,6 @@ const userAuth = async (req, res, next) => {
     try {
         const { accessToken } = req.cookies;
 
-        console.log("Access Token ", accessToken)
-
         if (!accessToken || accessToken.trim() === "") {
             if (req.headers["x-auth-check-type"] && req.headers["x-auth-check-type"] === "login-check-hit") {
                 return res.status(200).json({ success: false, isLoggedIn: false });
@@ -20,7 +18,6 @@ const userAuth = async (req, res, next) => {
         let decodedToken;
         try {
             decodedToken = jwt.verify(accessToken, process.env.JWT_ACCESS_SECRET);
-            console.log("Decoded Token in Auth Middleware : ", decodedToken);
         } catch (error) {
             console.log("JWT Verify Error:", error.message);
             return res.status(401).json({ success: false, message: "Invalid or expired token" });
@@ -30,7 +27,12 @@ const userAuth = async (req, res, next) => {
             return res.status(500).json({ success: false, message: "No Decoded Token Found" });
         }
 
-        const user = await User.findById(decodedToken._id).select("-password");
+        const user = await User.findById(decodedToken._id).select("-password -refreshToken");
+
+        if (!user) {
+            return res.status(401).json({ success: false, message: "User account no longer exists" });
+        }
+
         req.user = user;
 
         next();

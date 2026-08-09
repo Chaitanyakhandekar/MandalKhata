@@ -25,7 +25,27 @@ const Reports = () => {
         totalDonations: 0,
         totalExpenses: 0,
         currentBalance: 0,
-        totalTransactions: 0
+        totalTransactions: 0,
+        totalResidentDonations: 0,
+        totalExternalDonorDonations: 0
+    });
+    const [overview, setOverview] = useState({
+        totalHouseholds: 0,
+        totalRegisteredFlats: 0,
+        totalExpectedFlats: 0,
+        remainingFlats: 0,
+        totalResidents: 0,
+        buildings: [],
+        wings: [],
+        unregisteredFlats: []
+    });
+    const [mahaprasad, setMahaprasad] = useState({
+        registeredHouseholds: 0,
+        totalPeople: 0,
+        expectedAttendancePercentage: 80,
+        safetyBufferPercentage: 10,
+        expectedAttendance: 0,
+        recommendedMeals: 0
     });
     const [loading, setLoading] = useState(false);
     const [reportType, setReportType] = useState("overall"); // "overall", "donations", "expenses"
@@ -42,8 +62,12 @@ const Reports = () => {
                         totalDonations: response.data.totalDonations,
                         totalExpenses: response.data.totalExpenses,
                         currentBalance: response.data.currentBalance,
-                        totalTransactions: response.data.totalTransactions
+                        totalTransactions: response.data.totalTransactions,
+                        totalResidentDonations: response.data.totalResidentDonations,
+                        totalExternalDonorDonations: response.data.totalExternalDonorDonations
                     });
+                    setOverview(response.data.residentStats || {});
+                    setMahaprasad(response.data.mahaprasad || {});
                 }
             } catch (err) {
                 console.error(err);
@@ -109,7 +133,7 @@ const Reports = () => {
             
             doc.setFontSize(9);
             doc.setFont("helvetica", "bold");
-            doc.text("Metric Metric Title", 20, currentY + 5.5);
+            doc.text("Metric Title", 20, currentY + 5.5);
             doc.text("Amount (INR)", 140, currentY + 5.5);
 
             currentY += 8;
@@ -140,6 +164,184 @@ const Reports = () => {
             
             currentY += 22;
 
+            if (reportType === "overall") {
+                // Resident Statistics Section
+                if (currentY > 230) { doc.addPage(); currentY = 20; }
+
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(14);
+                doc.text("Resident Household & Building Statistics", 14, currentY);
+                currentY += 8;
+
+                doc.setDrawColor(229, 231, 235);
+                doc.setFillColor(249, 250, 251);
+                doc.rect(14, currentY, 182, 8, "FD");
+                doc.setFontSize(9);
+                doc.text("Statistics", 20, currentY + 5.5);
+                doc.text("Values", 140, currentY + 5.5);
+                currentY += 8;
+                doc.setFont("helvetica", "normal");
+
+                const residentMetricRows = [
+                    ["Registered Households", `${overview.totalHouseholds || 0}`],
+                    ["Total Resident Population", `${overview.totalResidents || 0}`],
+                    ["Expected Flats (configured)", `${overview.totalExpectedFlats || 0}`],
+                    ["Registered Flats", `${overview.totalRegisteredFlats || 0}`],
+                    ["Remaining / Unregistered Flats", `${overview.remainingFlats || 0}`],
+                    ["Resident Household Donations", `Rs. ${(stats.totalResidentDonations || 0).toLocaleString("en-IN")}`],
+                    ["External Donor Collections", `Rs. ${(stats.totalExternalDonorDonations || 0).toLocaleString("en-IN")}`]
+                ];
+
+                residentMetricRows.forEach(row => {
+                    if (currentY > 270) { doc.addPage(); currentY = 20; }
+                    doc.rect(14, currentY, 182, 8);
+                    doc.text(row[0], 20, currentY + 5.5);
+                    doc.setFont("helvetica", "bold");
+                    doc.text(row[1], 140, currentY + 5.5);
+                    doc.setFont("helvetica", "normal");
+                    currentY += 8;
+                });
+
+                currentY += 8;
+
+                // Building & Wing Summary Table
+                if (overview.buildings && overview.buildings.length > 0) {
+                    if (currentY > 230) { doc.addPage(); currentY = 20; }
+
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(13);
+                    doc.text("Building-wise Flat Registration", 14, currentY);
+                    currentY += 6;
+
+                    doc.setFillColor(243, 244, 246);
+                    doc.rect(14, currentY, 182, 8, "FD");
+                    doc.setFontSize(8);
+                    doc.text("Building", 16, currentY + 5.5);
+                    doc.text("Expected", 58, currentY + 5.5);
+                    doc.text("Registered", 92, currentY + 5.5);
+                    doc.text("Households", 125, currentY + 5.5);
+                    doc.text("Remaining", 150, currentY + 5.5);
+                    doc.text("People", 172, currentY + 5.5);
+                    currentY += 8;
+                    doc.setFont("helvetica", "normal");
+
+                    overview.buildings.forEach(b => {
+                        if (currentY > 270) { doc.addPage(); currentY = 20; }
+                        doc.rect(14, currentY, 182, 8);
+                        doc.text(`Building ${b.building}`, 16, currentY + 5.5);
+                        doc.text(`${b.expectedFlats}`, 58, currentY + 5.5);
+                        doc.text(`${b.registeredFlats}`, 92, currentY + 5.5);
+                        doc.text(`${b.households || b.registeredFlats}`, 125, currentY + 5.5);
+                        doc.text(`${b.remainingFlats}`, 150, currentY + 5.5);
+                        doc.text(`${b.people}`, 172, currentY + 5.5);
+                        currentY += 8;
+                    });
+
+                    currentY += 12;
+                }
+
+                // Wing-wise Summary Table
+                if (overview.wings && overview.wings.length > 0) {
+                    if (currentY > 230) { doc.addPage(); currentY = 20; }
+
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(13);
+                    doc.text("Wing-wise Flat Registration", 14, currentY);
+                    currentY += 6;
+
+                    doc.setFillColor(243, 244, 246);
+                    doc.rect(14, currentY, 182, 8, "FD");
+                    doc.setFontSize(8);
+                    doc.text("Building & Wing", 16, currentY + 5.5);
+                    doc.text("Expected", 58, currentY + 5.5);
+                    doc.text("Registered", 92, currentY + 5.5);
+                    doc.text("Households", 125, currentY + 5.5);
+                    doc.text("Remaining", 150, currentY + 5.5);
+                    doc.text("People", 172, currentY + 5.5);
+                    currentY += 8;
+                    doc.setFont("helvetica", "normal");
+
+                    overview.wings.forEach(w => {
+                        if (currentY > 270) { doc.addPage(); currentY = 20; }
+                        doc.rect(14, currentY, 182, 8);
+                        doc.text(`Building ${w.building} · Wing ${w.wing}`, 16, currentY + 5.5);
+                        doc.text(`${w.expectedFlats}`, 58, currentY + 5.5);
+                        doc.text(`${w.registeredFlats}`, 92, currentY + 5.5);
+                        doc.text(`${w.registeredFlats}`, 125, currentY + 5.5);
+                        doc.text(`${w.remainingFlats}`, 150, currentY + 5.5);
+                        doc.text(`${w.people}`, 172, currentY + 5.5);
+                        currentY += 8;
+                    });
+
+                    currentY += 12;
+                }
+
+                // Unregistered Flats Section
+                if (overview.unregisteredFlats && overview.unregisteredFlats.length > 0) {
+                    if (currentY > 230) { doc.addPage(); currentY = 20; }
+
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(13);
+                    doc.text("Flats Not Yet Registered", 14, currentY);
+                    currentY += 6;
+
+                    doc.setFillColor(243, 244, 246);
+                    doc.rect(14, currentY, 182, 8, "FD");
+                    doc.setFontSize(8);
+                    doc.text("Building & Wing", 16, currentY + 5.5);
+                    doc.text("Unregistered Flats", 58, currentY + 5.5);
+                    currentY += 8;
+                    doc.setFont("helvetica", "normal");
+
+                    overview.unregisteredFlats.forEach(u => {
+                        if (currentY > 270) { doc.addPage(); currentY = 20; }
+                        doc.rect(14, currentY, 182, 8);
+                        doc.text(`Building ${u.building} · Wing ${u.wing}`, 16, currentY + 5.5);
+                        doc.text(u.flats.join(", "), 58, currentY + 5.5);
+                        currentY += 8;
+                    });
+
+                    currentY += 12;
+                }
+
+                // Mahaprasad Planning Section
+                if (currentY > 230) { doc.addPage(); currentY = 20; }
+
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(13);
+                doc.text("Mahaprasad Planning (Resident Population Only)", 14, currentY);
+                currentY += 6;
+
+                doc.setFillColor(243, 244, 246);
+                doc.rect(14, currentY, 182, 8, "FD");
+                doc.setFontSize(8);
+                doc.text("Planning Metric", 16, currentY + 5.5);
+                doc.text("Value", 140, currentY + 5.5);
+                currentY += 8;
+                doc.setFont("helvetica", "normal");
+
+                const mahaprasadMetricRows = [
+                    ["Registered Households", `${mahaprasad.registeredHouseholds || 0}`],
+                    ["Total Resident People", `${mahaprasad.totalPeople || 0}`],
+                    ["Expected Attendance %", `${mahaprasad.expectedAttendancePercentage || 0}%`],
+                    ["Safety Buffer %", `${mahaprasad.safetyBufferPercentage || 0}%`],
+                    ["Expected Attendees", `${mahaprasad.expectedAttendance || 0}`],
+                    ["Recommended Meals", `${mahaprasad.recommendedMeals || 0}`]
+                ];
+
+                mahaprasadMetricRows.forEach(row => {
+                    if (currentY > 270) { doc.addPage(); currentY = 20; }
+                    doc.rect(14, currentY, 182, 8);
+                    doc.text(row[0], 20, currentY + 5.5);
+                    doc.setFont("helvetica", "bold");
+                    doc.text(row[1], 140, currentY + 5.5);
+                    doc.setFont("helvetica", "normal");
+                    currentY += 8;
+                });
+
+                currentY += 15;
+            }
+
             if (reportType === "overall" || reportType === "donations") {
                 // Fetch ALL donations
                 const res = await donationApi.getDonations({ festivalYear: selectedYear, limit: 1000 });
@@ -156,22 +358,25 @@ const Reports = () => {
                     doc.rect(14, currentY, 182, 8, "FD");
                     doc.setFontSize(8);
                     doc.text("Receipt #", 16, currentY + 5.5);
-                    doc.text("Donor Name", 45, currentY + 5.5);
-                    doc.text("Method", 105, currentY + 5.5);
-                    doc.text("Date", 130, currentY + 5.5);
-                    doc.text("Amount (Rs.)", 165, currentY + 5.5);
+                    doc.text("Donor Name", 42, currentY + 5.5);
+                    doc.text("Type", 92, currentY + 5.5);
+                    doc.text("Method", 112, currentY + 5.5);
+                    doc.text("Date", 135, currentY + 5.5);
+                    doc.text("Amount (Rs.)", 168, currentY + 5.5);
 
                     currentY += 8;
                     doc.setFont("helvetica", "normal");
 
                     res.data.donations.forEach(don => {
                         if (currentY > 270) { doc.addPage(); currentY = 20; }
+                        const typeLabel = don.donorType === "resident" ? "RES" : don.donorType === "external" ? "EXT" : "REG";
                         doc.rect(14, currentY, 182, 8);
                         doc.text(don.receiptNumber, 16, currentY + 5.5);
-                        doc.text(don.donorName.substring(0, 30), 45, currentY + 5.5);
-                        doc.text(don.paymentMethod.toUpperCase(), 105, currentY + 5.5);
-                        doc.text(formatDate(don.date), 130, currentY + 5.5);
-                        doc.text(don.amount.toLocaleString("en-IN"), 165, currentY + 5.5);
+                        doc.text(don.donorName.substring(0, 26), 42, currentY + 5.5);
+                        doc.text(typeLabel, 92, currentY + 5.5);
+                        doc.text(don.paymentMethod.toUpperCase(), 112, currentY + 5.5);
+                        doc.text(formatDate(don.date), 135, currentY + 5.5);
+                        doc.text(don.amount.toLocaleString("en-IN"), 168, currentY + 5.5);
                         currentY += 8;
                     });
                     
@@ -239,9 +444,11 @@ const Reports = () => {
                 const res = await donationApi.getDonations({ festivalYear: selectedYear, limit: 1000 });
                 if (res.success) {
                     fileName = `MandalKhata_Donations_${selectedYear}.csv`;
-                    csvContent += "Receipt Number,Donor Name,Amount,Payment Method,Phone,Date,Note\n";
+                    csvContent += "Receipt Number,Donor Name,Donor Type,Flat,Amount,Payment Method,Phone,Date,Note\n";
                     res.data.donations.forEach(don => {
-                        csvContent += `"${don.receiptNumber}","${don.donorName.replace(/"/g, '""')}",${don.amount},"${don.paymentMethod}","${don.phone || ""}","${formatDate(don.date)}","${(don.note || "").replace(/"/g, '""')}"\n`;
+                        const typeLabel = don.donorType === "resident" ? "RESIDENT" : don.donorType === "external" ? "EXTERNAL" : "REGULAR";
+                        const flatInfo = don.household ? `B${don.household.building} Wing ${don.household.wing} Flat ${don.household.flatNumber}` : "";
+                        csvContent += `"${don.receiptNumber}","${don.donorName.replace(/"/g, '""')}","${typeLabel}","${flatInfo}",${don.amount},"${don.paymentMethod}","${don.phone || ""}","${formatDate(don.date)}","${(don.note || "").replace(/"/g, '""')}"\n`;
                     });
                 }
             } else if (reportType === "expenses") {

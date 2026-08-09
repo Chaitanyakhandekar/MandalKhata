@@ -4,7 +4,6 @@ const festivalYearSchema = new mongoose.Schema({
     year: {
         type: String,
         required: true,
-        unique: true,
         trim: true
     },
     isActive: {
@@ -17,5 +16,7 @@ const festivalYearSchema = new mongoose.Schema({
         required: true
     }
 }, { timestamps: true });
+
+festivalYearSchema.index({ year: 1, createdBy: 1 }, { unique: true });
 
 export const FestivalYear = mongoose.model("FestivalYear", festivalYearSchema);

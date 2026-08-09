@@ -3,13 +3,15 @@ import { Expense } from "../models/expense.model.js";
 import { FestivalYear } from "../models/festivalYear.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/apiUtils.js";
+import { calculateResidentStatistics, getMahaprasadPlanning } from "../services/residentStats.service.js";
 
 const getDashboardStats = asyncHandler(async (req, res) => {
     const { festivalYear } = req.query;
+    const userId = req.user._id;
 
     let targetYear = festivalYear;
     if (!targetYear) {
-        const activeYear = await FestivalYear.findOne({ isActive: true });
+        const activeYear = await FestivalYear.findOne({ isActive: true, createdBy: userId });
         if (!activeYear) {
             return res.status(200).json(new ApiResponse(200, {
                 totalDonations: 0,
@@ -19,20 +21,45 @@ const getDashboardStats = asyncHandler(async (req, res) => {
                 recentActivity: [],
                 expensesByCategory: [],
                 donationsByPaymentMethod: [],
-                monthlyComparison: []
+                monthlyComparison: [],
+                totalResidentDonations: 0,
+                totalExternalDonorDonations: 0,
+                donationsByDonorType: [],
+                residentStats: {
+                    totalHouseholds: 0,
+                    totalRegisteredFlats: 0,
+                    totalExpectedFlats: 0,
+                    remainingFlats: 0,
+                    totalResidents: 0,
+                    buildings: [],
+                    wings: [],
+                    unregisteredFlats: []
+                },
+                mahaprasad: {
+                    festivalYear: null,
+                    registeredHouseholds: 0,
+                    totalPeople: 0,
+                    expectedAttendancePercentage: 80,
+                    safetyBufferPercentage: 10,
+                    expectedAttendance: 0,
+                    recommendedMeals: 0,
+                    externalDonorsExcluded: true
+                }
             }, "No active year found. Returned empty stats."));
         }
         targetYear = activeYear.year;
     }
 
+    const yearMatch = { festivalYear: targetYear, createdBy: userId };
+
     // 1. Core Financial Aggregates
     const donationsAggregate = await Donation.aggregate([
-        { $match: { festivalYear: targetYear } },
+        { $match: yearMatch },
         { $group: { _id: null, total: { $sum: "$amount" }, count: { $sum: 1 } } }
     ]);
 
     const expensesAggregate = await Expense.aggregate([
-        { $match: { festivalYear: targetYear } },
+        { $match: yearMatch },
         { $group: { _id: null, total: { $sum: "$amount" }, count: { $sum: 1 } } }
     ]);
 
@@ -44,13 +71,29 @@ const getDashboardStats = asyncHandler(async (req, res) => {
     const currentBalance = totalDonations - totalExpenses;
     const totalTransactions = donationsCount + expensesCount;
 
+    // 1b. Resident vs External Donation Breakdown
+    const donationsByDonorTypeAggregate = await Donation.aggregate([
+        { $match: yearMatch },
+        {
+            $group: {
+                _id: { $ifNull: ["$donorType", "regular"] },
+                total: { $sum: "$amount" },
+                count: { $sum: 1 }
+            }
+        },
+        { $project: { donorType: "$_id", amount: "$total", count: 1, _id: 0 } }
+    ]);
+
+    const totalResidentDonations = donationsByDonorTypeAggregate.find(d => d.donorType === "resident")?.amount || 0;
+    const totalExternalDonorDonations = donationsByDonorTypeAggregate.find(d => d.donorType === "external")?.amount || 0;
+
     // 2. Recent Activities (Latest 5 donations and 5 expenses merged)
-    const recentDonations = await Donation.find({ festivalYear: targetYear })
+    const recentDonations = await Donation.find(yearMatch)
         .sort({ date: -1, createdAt: -1 })
         .limit(5)
         .lean();
 
-    const recentExpenses = await Expense.find({ festivalYear: targetYear })
+    const recentExpenses = await Expense.find(yearMatch)
         .sort({ date: -1, createdAt: -1 })
         .limit(5)
         .lean();
@@ -64,7 +107,7 @@ const getDashboardStats = asyncHandler(async (req, res) => {
 
     // 3. Expenses by Category Breakdown
     const expensesByCategory = await Expense.aggregate([
-        { $match: { festivalYear: targetYear } },
+        { $match: yearMatch },
         { $group: { _id: "$category", totalAmount: { $sum: "$amount" } } },
         { $project: { category: "$_id", amount: "$totalAmount", _id: 0 } },
         { $sort: { amount: -1 } }
@@ -72,7 +115,7 @@ const getDashboardStats = asyncHandler(async (req, res) => {
 
     // 4. Donations by Payment Method Breakdown
     const donationsByPaymentMethod = await Donation.aggregate([
-        { $match: { festivalYear: targetYear } },
+        { $match: yearMatch },
         { $group: { _id: "$paymentMethod", totalAmount: { $sum: "$amount" } } },
         { $project: { paymentMethod: "$_id", amount: "$totalAmount", _id: 0 } }
     ]);
@@ -80,7 +123,7 @@ const getDashboardStats = asyncHandler(async (req, res) => {
     // 5. Monthly Comparison (Group by month)
     // We group both donations and expenses by month (1 to 12)
     const donationsByMonth = await Donation.aggregate([
-        { $match: { festivalYear: targetYear } },
+        { $match: yearMatch },
         {
             $group: {
                 _id: { $month: "$date" },
@@ -90,7 +133,7 @@ const getDashboardStats = asyncHandler(async (req, res) => {
     ]);
 
     const expensesByMonth = await Expense.aggregate([
-        { $match: { festivalYear: targetYear } },
+        { $match: yearMatch },
         {
             $group: {
                 _id: { $month: "$date" },
@@ -117,6 +160,12 @@ const getDashboardStats = asyncHandler(async (req, res) => {
 
     const monthlyComparison = Object.values(monthlyMap);
 
+    // 6. Resident / Household Statistics (computed only from resident households)
+    const [residentStats, mahaprasad] = await Promise.all([
+        calculateResidentStatistics(userId),
+        getMahaprasadPlanning(userId, targetYear)
+    ]);
+
     return res.status(200).json(new ApiResponse(200, {
         totalDonations,
         totalExpenses,
@@ -125,24 +174,32 @@ const getDashboardStats = asyncHandler(async (req, res) => {
         recentActivity: mergedActivity,
         expensesByCategory,
         donationsByPaymentMethod,
-        monthlyComparison
+        monthlyComparison,
+        totalResidentDonations,
+        totalExternalDonorDonations,
+        donationsByDonorType: donationsByDonorTypeAggregate,
+        residentStats,
+        mahaprasad
     }, "Dashboard statistics compiled successfully"));
 });
 
 const getLedger = asyncHandler(async (req, res) => {
     const { festivalYear } = req.query;
+    const userId = req.user._id;
 
     let targetYear = festivalYear;
     if (!targetYear) {
-        const activeYear = await FestivalYear.findOne({ isActive: true });
+        const activeYear = await FestivalYear.findOne({ isActive: true, createdBy: userId });
         if (!activeYear) {
             return res.status(200).json(new ApiResponse(200, [], "No active year found"));
         }
         targetYear = activeYear.year;
     }
 
-    const donations = await Donation.find({ festivalYear: targetYear }).lean();
-    const expenses = await Expense.find({ festivalYear: targetYear }).lean();
+    const yearMatch = { festivalYear: targetYear, createdBy: userId };
+
+    const donations = await Donation.find(yearMatch).lean();
+    const expenses = await Expense.find(yearMatch).lean();
 
     // Map and combine
     const mergedTransactions = [
@@ -152,6 +209,7 @@ const getLedger = asyncHandler(async (req, res) => {
             donorName: d.donorName,
             amount: d.amount,
             type: "donation",
+            donorType: d.donorType || "regular",
             paymentMethod: d.paymentMethod,
             receiptNumber: d.receiptNumber,
             date: d.date,

@@ -4,9 +4,12 @@ import { Toaster } from 'react-hot-toast'
 import Login from './pages/auth/Login.jsx'
 import Register from './pages/auth/Register.jsx'
 import Dashboard from './pages/Dashboard.jsx'
+import Households from './pages/Households.jsx'
+import ExternalDonors from './pages/ExternalDonors.jsx'
 import Donations from './pages/Donations.jsx'
 import Expenses from './pages/Expenses.jsx'
 import Ledger from './pages/Ledger.jsx'
+import Mahaprasad from './pages/Mahaprasad.jsx'
 import Reports from './pages/Reports.jsx'
 import Settings from './pages/Settings.jsx'
 import ProtectedRoute from './components/guards/ProtectedRoute.jsx'
@@ -69,6 +72,22 @@ function App() {
           }
         />
         <Route 
+          path='/households' 
+          element={
+            <ProtectedRoute>
+              <Households />
+            </ProtectedRoute>
+          }
+        />
+        <Route 
+          path='/external-donors' 
+          element={
+            <ProtectedRoute>
+              <ExternalDonors />
+            </ProtectedRoute>
+          }
+        />
+        <Route 
           path='/donations' 
           element={
             <ProtectedRoute>
@@ -89,6 +108,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Ledger />
+            </ProtectedRoute>
+          }
+        />
+        <Route 
+          path='/mahaprasad' 
+          element={
+            <ProtectedRoute>
+              <Mahaprasad />
             </ProtectedRoute>
           }
         />

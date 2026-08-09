@@ -3,7 +3,7 @@ export const asyncHandler = (requestHandler) => {
         try {
             await requestHandler(req, res, next);
         } catch (error) {
-            res.json({
+            res.status(error.statusCode || 500).json({
                 success: false,
                 message: error.message,
             });

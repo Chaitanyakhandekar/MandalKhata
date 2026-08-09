@@ -31,6 +31,21 @@ const donationSchema = new mongoose.Schema({
         default: Date.now,
         required: true
     },
+    donorType: {
+        type: String,
+        enum: ["resident", "external"],
+        trim: true
+    },
+    household: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Household",
+        default: null
+    },
+    externalDonor: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ExternalDonor",
+        default: null
+    },
     receiptNumber: {
         type: String,
         required: true,
@@ -47,5 +62,9 @@ const donationSchema = new mongoose.Schema({
         required: true
     }
 }, { timestamps: true });
+
+donationSchema.index({ createdBy: 1, festivalYear: 1, donorType: 1 });
+donationSchema.index({ household: 1 });
+donationSchema.index({ externalDonor: 1 });
 
 export const Donation = mongoose.model("Donation", donationSchema);

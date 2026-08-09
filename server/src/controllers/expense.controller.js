@@ -7,13 +7,13 @@ import { uploadFileOnCloudinary, deleteFileFromCloudinary } from "../services/cl
 const getExpenses = asyncHandler(async (req, res) => {
     const { festivalYear, search, category, paymentStatus, startDate, endDate, page = 1, limit = 50 } = req.query;
 
-    const query = {};
+    const query = { createdBy: req.user._id };
 
     // Filter by festival year (always default to active year if not provided)
     if (festivalYear) {
         query.festivalYear = festivalYear;
     } else {
-        const activeYear = await FestivalYear.findOne({ isActive: true });
+        const activeYear = await FestivalYear.findOne({ isActive: true, createdBy: req.user._id });
         if (activeYear) {
             query.festivalYear = activeYear.year;
         }
@@ -88,7 +88,7 @@ const createExpense = asyncHandler(async (req, res) => {
     // Resolve festival year
     let targetYear = festivalYear;
     if (!targetYear) {
-        const activeYear = await FestivalYear.findOne({ isActive: true });
+        const activeYear = await FestivalYear.findOne({ isActive: true, createdBy: req.user._id });
         if (!activeYear) {
             return res.status(400).json(new ApiResponse(400, null, "No active festival year found. Please create a year first.", false));
         }
@@ -134,6 +134,10 @@ const updateExpense = asyncHandler(async (req, res) => {
     const expense = await Expense.findById(id);
     if (!expense) {
         return res.status(404).json(new ApiResponse(404, null, "Expense not found", false));
+    }
+
+    if (expense.createdBy.toString() !== req.user._id.toString()) {
+        return res.status(403).json(new ApiResponse(403, null, "You can only update your own expenses", false));
     }
 
     const updateData = {};
@@ -186,6 +190,10 @@ const deleteExpense = asyncHandler(async (req, res) => {
     const expense = await Expense.findById(id);
     if (!expense) {
         return res.status(404).json(new ApiResponse(404, null, "Expense not found", false));
+    }
+
+    if (expense.createdBy.toString() !== req.user._id.toString()) {
+        return res.status(403).json(new ApiResponse(403, null, "You can only delete your own expenses", false));
     }
 
     // Delete image from Cloudinary if it exists
