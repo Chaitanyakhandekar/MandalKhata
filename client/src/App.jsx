@@ -4,10 +4,14 @@ import { Toaster } from 'react-hot-toast'
 import Login from './pages/auth/Login.jsx'
 import Register from './pages/auth/Register.jsx'
 import Dashboard from './pages/Dashboard.jsx'
+import Households from './pages/Households.jsx'
+import ExternalDonors from './pages/ExternalDonors.jsx'
 import Donations from './pages/Donations.jsx'
 import Expenses from './pages/Expenses.jsx'
 import Ledger from './pages/Ledger.jsx'
+import Mahaprasad from './pages/Mahaprasad.jsx'
 import Reports from './pages/Reports.jsx'
+import BulkImport from './pages/BulkImport.jsx'
 import Settings from './pages/Settings.jsx'
 import ProtectedRoute from './components/guards/ProtectedRoute.jsx'
 import ProtectedRouteAuth from './components/guards/ProtectedRouteAuth.jsx'
@@ -21,7 +25,6 @@ function App() {
         html, body, #root {
           height: 100%;
           margin: 0;
-          overflow: hidden;
         }
       `}</style>
       
@@ -69,6 +72,22 @@ function App() {
           }
         />
         <Route 
+          path='/households' 
+          element={
+            <ProtectedRoute>
+              <Households />
+            </ProtectedRoute>
+          }
+        />
+        <Route 
+          path='/external-donors' 
+          element={
+            <ProtectedRoute>
+              <ExternalDonors />
+            </ProtectedRoute>
+          }
+        />
+        <Route 
           path='/donations' 
           element={
             <ProtectedRoute>
@@ -93,10 +112,26 @@ function App() {
           }
         />
         <Route 
+          path='/mahaprasad' 
+          element={
+            <ProtectedRoute>
+              <Mahaprasad />
+            </ProtectedRoute>
+          }
+        />
+        <Route 
           path='/reports' 
           element={
             <ProtectedRoute>
               <Reports />
+            </ProtectedRoute>
+          }
+        />
+        <Route 
+          path='/bulk-import' 
+          element={
+            <ProtectedRoute>
+              <BulkImport />
             </ProtectedRoute>
           }
         />

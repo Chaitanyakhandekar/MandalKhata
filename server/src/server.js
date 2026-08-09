@@ -34,12 +34,12 @@ app.use(cors({
     credentials: true
 }))
 app.use(express.json({
-    limit: "16kb"
+    limit: "10mb"
 }))
 app.use(cookieParser())
 app.use(express.urlencoded({
     extended: true,
-    limit: "16kb"
+    limit: "10mb"
 }))
 app.use(express.static("public"))
 
@@ -49,12 +49,35 @@ import festivalRouter from "./routes/festival.route.js"
 import donationRouter from "./routes/donation.route.js"
 import expenseRouter from "./routes/expense.route.js"
 import reportRouter from "./routes/report.route.js"
+import householdRouter from "./routes/household.route.js"
+import buildingConfigRouter from "./routes/buildingConfig.route.js"
+import externalDonorRouter from "./routes/externalDonor.route.js"
+import mahaprasadRouter from "./routes/mahaprasad.route.js"
+import bulkImportRouter from "./routes/bulkImport.route.js"
 
 app.use("/api/users", userRouter)
 app.use("/api/festivals", festivalRouter)
 app.use("/api/donations", donationRouter)
 app.use("/api/expenses", expenseRouter)
 app.use("/api/reports", reportRouter)
+app.use("/api/households", householdRouter)
+app.use("/api/building-configs", buildingConfigRouter)
+app.use("/api/donors", externalDonorRouter)
+app.use("/api/mahaprasad", mahaprasadRouter)
+app.use("/api/bulk-import", bulkImportRouter)
+
+// Global 404 and error handlers
+app.use((req, res) => {
+    res.status(404).json({ success: false, message: "Route not found" });
+});
+
+app.use((err, req, res, next) => {
+    const statusCode = err.statusCode || 500;
+    res.status(statusCode).json({
+        success: false,
+        message: err.message || "Something went wrong"
+    });
+});
 
 // const PORT = process.env.PORT || 3000;
 // httpServer.listen(PORT, () => {

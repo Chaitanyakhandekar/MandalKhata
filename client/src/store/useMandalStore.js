@@ -7,12 +7,19 @@ export const useMandalStore = create((set, get) => ({
     selectedYear: localStorage.getItem("selectedYear") || "",
     loading: false,
 
-    setYears: (years) => {
+    resolveSelection: (years) => {
         const active = years.find(y => y.isActive);
-        const selected = get().selectedYear || (active ? active.year : "");
+        const current = get().selectedYear;
+        const stillValid = years.some(y => y.year === current);
+        const selected = stillValid ? current : (active ? active.year : (years.length > 0 ? years[0].year : ""));
         if (selected) {
             localStorage.setItem("selectedYear", selected);
         }
+        return { active, selected };
+    },
+
+    setYears: (years) => {
+        const { active, selected } = get().resolveSelection(years);
         set({ years, activeYear: active, selectedYear: selected });
     },
 
@@ -26,11 +33,7 @@ export const useMandalStore = create((set, get) => ({
         const response = await festivalApi.getYears();
         if (response && response.success) {
             const years = response.data;
-            const active = years.find(y => y.isActive);
-            const selected = get().selectedYear || (active ? active.year : "");
-            if (selected) {
-                localStorage.setItem("selectedYear", selected);
-            }
+            const { active, selected } = get().resolveSelection(years);
             set({ years, activeYear: active, selectedYear: selected, loading: false });
         } else {
             set({ loading: false });

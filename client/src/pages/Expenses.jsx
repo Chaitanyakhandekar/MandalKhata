@@ -345,7 +345,7 @@ const Expenses = () => {
                     </div>
                 ) : (
                     <>
-                        <div className="overflow-x-auto">
+                        <div className="hidden overflow-x-auto md:block">
                             <table className="w-full text-left text-sm border-collapse">
                                 <thead>
                                     <tr className="bg-gray-50/50 text-[11px] font-bold uppercase tracking-wider text-gray-400 border-b border-gray-100 dark:bg-gray-800/20 dark:border-gray-800">
@@ -444,6 +444,95 @@ const Expenses = () => {
                             </table>
                         </div>
 
+                        {/* Mobile expense cards */}
+                        <div className="divide-y divide-gray-100 md:hidden dark:divide-gray-800/40">
+                            {expenses.map((exp) => (
+                                <div key={exp._id} className="px-5 py-4">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0 flex-1">
+                                            <div className="font-semibold text-sm text-gray-700 dark:text-gray-300">
+                                                {exp.title}
+                                            </div>
+                                            {exp.note && (
+                                                <div className="mt-0.5 truncate text-[11px] text-gray-400">
+                                                    {exp.note}
+                                                </div>
+                                            )}
+                                            <div className="mt-1 flex flex-wrap items-center gap-2">
+                                                <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 border border-gray-200 rounded-lg px-2 py-0.5 dark:bg-gray-950 dark:border-gray-850">
+                                                    {exp.category}
+                                                </span>
+                                                <span
+                                                    className={`inline-flex items-center rounded-lg px-2 py-0.5 text-[11px] font-semibold ${
+                                                        exp.paymentStatus === "paid"
+                                                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400"
+                                                            : "bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400"
+                                                    }`}
+                                                >
+                                                    {exp.paymentStatus.toUpperCase()}
+                                                </span>
+                                            </div>
+                                            <div className="mt-0.5 text-[11px] text-gray-400">
+                                                {exp.vendorName || "—"}
+                                                {" · "}
+                                                {new Date(exp.date).toLocaleDateString("en-IN", {
+                                                    day: "numeric",
+                                                    month: "short",
+                                                    year: "numeric"
+                                                })}
+                                            </div>
+                                        </div>
+                                        <div className="shrink-0">
+                                            {exp.billImage ? (
+                                                <button
+                                                    onClick={() => setPreviewImageUrl(exp.billImage)}
+                                                    title="View bill"
+                                                    aria-label="View bill image"
+                                                    className="group relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-gray-100 shadow-sm"
+                                                >
+                                                    <img
+                                                        src={exp.billImage}
+                                                        alt="Bill attachment"
+                                                        className="h-full w-full object-cover"
+                                                    />
+                                                    <div className="absolute inset-0 flex items-center justify-center bg-gray-900/30">
+                                                        <Eye className="h-4 w-4 text-white" />
+                                                    </div>
+                                                </button>
+                                            ) : (
+                                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-50 border border-dashed border-gray-200 text-gray-300 dark:bg-gray-950 dark:border-gray-800">
+                                                    <ImageIcon className="h-5 w-5" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="mt-3 flex items-center justify-between gap-2">
+                                        <div className="text-base font-bold text-rose-600 dark:text-rose-400">
+                                            {formatCurrency(exp.amount)}
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <button
+                                                onClick={() => openEditModal(exp)}
+                                                title="Edit expense"
+                                                aria-label="Edit expense"
+                                                className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-indigo-600 transition-colors dark:border-gray-800 dark:hover:bg-gray-800"
+                                            >
+                                                <Edit2 className="h-4.5 w-4.5" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(exp._id)}
+                                                title="Delete expense"
+                                                aria-label="Delete expense"
+                                                className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-500 transition-colors dark:border-gray-800 dark:hover:bg-red-950/20"
+                                            >
+                                                <Trash2 className="h-4.5 w-4.5" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
                         {/* Pagination component */}
                         {pages > 1 && (
                             <div className="flex items-center justify-between border-t border-gray-100 px-6 py-4 dark:border-gray-800">
@@ -492,8 +581,8 @@ const Expenses = () => {
                         {/* Form */}
                         <form onSubmit={handleFormSubmit}>
                             <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="col-span-2">
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <div className="sm:col-span-2">
                                         <label className="text-xs font-bold uppercase tracking-wider text-gray-400">
                                             Expense Title *
                                         </label>
@@ -586,11 +675,11 @@ const Expenses = () => {
                                     </div>
 
                                     {/* Upload System */}
-                                    <div className="col-span-2">
+                                    <div className="sm:col-span-2">
                                         <label className="text-xs font-bold uppercase tracking-wider text-gray-400">
                                             Bill Image Attachment
                                         </label>
-                                        <div className="mt-2 flex items-center gap-4">
+                                        <div className="mt-2 flex flex-wrap items-center gap-3">
                                             <label className="flex cursor-pointer items-center gap-1.5 rounded-xl border border-gray-200 px-4 py-2.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-400 dark:hover:bg-gray-950">
                                                 <Upload className="h-4 w-4" />
                                                 Choose File
@@ -601,7 +690,7 @@ const Expenses = () => {
                                                     className="hidden"
                                                 />
                                             </label>
-                                            <span className="text-xs text-gray-400">
+                                            <span className="min-w-0 max-w-full truncate text-xs text-gray-400">
                                                 {selectedFile ? selectedFile.name : "No file attached"}
                                             </span>
                                         </div>
@@ -627,7 +716,7 @@ const Expenses = () => {
                                         )}
                                     </div>
 
-                                    <div className="col-span-2">
+                                    <div className="sm:col-span-2">
                                         <label className="text-xs font-bold uppercase tracking-wider text-gray-400">
                                             Note / Description
                                         </label>
@@ -644,18 +733,18 @@ const Expenses = () => {
                             </div>
 
                             {/* Form Actions */}
-                            <div className="flex items-center justify-end gap-3 border-t border-gray-100 bg-gray-50 px-6 py-4 rounded-b-3xl dark:border-gray-800 dark:bg-gray-950">
+                            <div className="flex flex-col-reverse gap-2 border-t border-gray-100 bg-gray-50 px-6 py-4 rounded-b-3xl sm:flex-row sm:items-center sm:justify-end sm:gap-3 dark:border-gray-800 dark:bg-gray-950">
                                 <button
                                     type="button"
                                     onClick={() => setIsOpen(false)}
-                                    className="rounded-xl border border-gray-200 bg-white py-2.5 px-4 text-xs font-semibold text-gray-500 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900"
+                                    className="w-full rounded-xl border border-gray-200 bg-white py-2.5 px-4 text-xs font-semibold text-gray-500 hover:bg-gray-50 sm:w-auto dark:border-gray-800 dark:bg-gray-900"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={formLoading}
-                                    className="flex items-center gap-1.5 rounded-xl bg-indigo-600 py-2.5 px-4 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+                                    className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-indigo-600 py-2.5 px-4 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 sm:w-auto"
                                 >
                                     {formLoading ? (
                                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>

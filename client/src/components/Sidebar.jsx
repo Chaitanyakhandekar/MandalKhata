@@ -8,7 +8,11 @@ import {
     BarChart3,
     Settings,
     X,
-    FolderKanban
+    FolderKanban,
+    Home as HomeIcon,
+    Building2,
+    UtensilsCrossed,
+    FileSpreadsheet
 } from "lucide-react";
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
@@ -16,10 +20,14 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
     const menuItems = [
         { name: "Dashboard", path: "/", icon: LayoutDashboard },
+        { name: "Households", path: "/households", icon: HomeIcon },
+        { name: "External Donors", path: "/external-donors", icon: Building2 },
         { name: "Donations", path: "/donations", icon: Coins },
         { name: "Expenses", path: "/expenses", icon: Receipt },
         { name: "Ledger", path: "/ledger", icon: BookOpen },
+        { name: "Mahaprasad", path: "/mahaprasad", icon: UtensilsCrossed },
         { name: "Reports", path: "/reports", icon: BarChart3 },
+        { name: "Bulk Import", path: "/bulk-import", icon: FileSpreadsheet },
         { name: "Settings", path: "/settings", icon: Settings }
     ];
 
@@ -92,7 +100,10 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 </nav>
 
                 {/* Footer Credits */}
-                <div className="border-t border-slate-800 p-4 text-center">
+                <div
+                    className="border-t border-slate-800 p-4 text-center"
+                    style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+                >
                     <p className="text-xs text-slate-500">MandalKhata v1.0.0</p>
                     <p className="text-[10px] text-slate-600 mt-0.5">Finance Management</p>
                 </div>
