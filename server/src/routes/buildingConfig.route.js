@@ -3,7 +3,8 @@ import {
     getBuildingConfigs,
     createBuildingConfig,
     updateBuildingConfig,
-    deleteBuildingConfig
+    deleteBuildingConfig,
+    getFlatsDonationStatus
 } from "../controllers/buildingConfig.controller.js";
 import { userAuth } from "../middlewares/userAuth.middleware.js";
 
@@ -11,6 +12,8 @@ const router = Router();
 
 // Apply auth middleware to all building config routes
 router.use(userAuth);
+
+router.route("/flats-donation-status").get(getFlatsDonationStatus);
 
 router.route("/")
     .get(getBuildingConfigs)

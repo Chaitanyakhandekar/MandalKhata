@@ -230,50 +230,50 @@ const Reports = () => {
                 </p>
             </div>
 
-            {/* Core aggregates summary visual cards */}
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3 mb-8">
-                <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400">
-                            <TrendingUp className="h-5 w-5" />
+            {/* Core aggregates summary visual cards (2 per row on mobile) */}
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-6 md:grid-cols-3 mb-5 sm:mb-8">
+                <div className="rounded-xl sm:rounded-2xl border border-gray-100 bg-white p-3.5 sm:p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="flex h-7 w-7 sm:h-9 sm:w-9 items-center justify-center rounded-lg sm:rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400">
+                            <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
                         </div>
-                        <span className="text-sm font-semibold text-gray-400">Collections</span>
+                        <span className="text-xs sm:text-sm font-semibold text-gray-400">Collections</span>
                     </div>
-                    <div className="mt-4">
-                        <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <div className="mt-2.5 sm:mt-4">
+                        <span className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
                             {formatCurrency(stats.totalDonations)}
                         </span>
-                        <p className="text-xs text-gray-400 mt-1">Sum of all donations</p>
+                        <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5 sm:mt-1">Sum of all donations</p>
                     </div>
                 </div>
 
-                <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400">
-                            <TrendingDown className="h-5 w-5" />
+                <div className="rounded-xl sm:rounded-2xl border border-gray-100 bg-white p-3.5 sm:p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="flex h-7 w-7 sm:h-9 sm:w-9 items-center justify-center rounded-lg sm:rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400">
+                            <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5" />
                         </div>
-                        <span className="text-sm font-semibold text-gray-400">Expenses</span>
+                        <span className="text-xs sm:text-sm font-semibold text-gray-400">Expenses</span>
                     </div>
-                    <div className="mt-4">
-                        <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <div className="mt-2.5 sm:mt-4">
+                        <span className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
                             {formatCurrency(stats.totalExpenses)}
                         </span>
-                        <p className="text-xs text-gray-400 mt-1">Sum of all expenses</p>
+                        <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5 sm:mt-1">Sum of all expenses</p>
                     </div>
                 </div>
 
-                <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400">
-                            <Scale className="h-5 w-5" />
+                <div className="col-span-2 md:col-span-1 rounded-xl sm:rounded-2xl border border-gray-100 bg-white p-3.5 sm:p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="flex h-7 w-7 sm:h-9 sm:w-9 items-center justify-center rounded-lg sm:rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400">
+                            <Scale className="h-4 w-4 sm:h-5 sm:w-5" />
                         </div>
-                        <span className="text-sm font-semibold text-gray-400">Balance</span>
+                        <span className="text-xs sm:text-sm font-semibold text-gray-400">Balance</span>
                     </div>
-                    <div className="mt-4">
-                        <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <div className="mt-2.5 sm:mt-4">
+                        <span className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
                             {formatCurrency(stats.currentBalance)}
                         </span>
-                        <p className="text-xs text-gray-400 mt-1">Mandal running balance</p>
+                        <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5 sm:mt-1">Mandal running balance</p>
                     </div>
                 </div>
             </div>

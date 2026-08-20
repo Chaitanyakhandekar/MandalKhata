@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Sidebar from "./Sidebar.jsx";
 import Navbar from "./Navbar.jsx";
+import MobileBottomNav from "./MobileBottomNav.jsx";
 
 const Layout = ({ children }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -21,14 +22,17 @@ const Layout = ({ children }) => {
 
                 {/* Sub-page Views Container */}
                 <main
-                    className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8"
-                    style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
+                    className="flex-1 overflow-y-auto px-3.5 py-5 sm:px-6 sm:py-8 pb-24 lg:pb-8"
+                    style={{ paddingBottom: "max(5.5rem, calc(4.5rem + env(safe-area-inset-bottom)))" }}
                 >
                     <div className="mx-auto w-full max-w-7xl">
                         {children}
                     </div>
                 </main>
             </div>
+
+            {/* Mobile Fixed Bottom Navigation Bar */}
+            <MobileBottomNav toggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} />
         </div>
     );
 };

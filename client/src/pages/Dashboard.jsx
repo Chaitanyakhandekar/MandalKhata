@@ -191,178 +191,178 @@ const Dashboard = () => {
     return (
         <Layout>
             {/* Upper Header Welcome */}
-            <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div className="mb-5 sm:mb-8 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
+                    <h1 className="text-xl font-bold text-gray-900 dark:text-white sm:text-3xl">
                         Festival Year {selectedYear}
                     </h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5 sm:mt-1">
                         Here is a financial summary of your Ganesh Mandal's records
                     </p>
                 </div>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-2 sm:gap-3">
                     <Link
                         to="/donations"
-                        className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-md shadow-emerald-600/15 transition-all hover:bg-emerald-700"
+                        className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 sm:px-4 sm:py-2.5 text-xs font-semibold text-white shadow-md shadow-emerald-600/15 transition-all hover:bg-emerald-700"
                     >
-                        <PlusCircle className="h-4 w-4" />
+                        <PlusCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         Add Donation
                     </Link>
                     <Link
                         to="/expenses"
-                        className="flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2.5 text-xs font-semibold text-white shadow-md shadow-rose-600/15 transition-all hover:bg-rose-700"
+                        className="flex items-center gap-1.5 rounded-xl bg-rose-600 px-3 py-2 sm:px-4 sm:py-2.5 text-xs font-semibold text-white shadow-md shadow-rose-600/15 transition-all hover:bg-rose-700"
                     >
-                        <PlusCircle className="h-4 w-4" />
+                        <PlusCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         Add Expense
                     </Link>
                 </div>
             </div>
 
-            {/* Financial Metric Cards */}
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+            {/* Financial Metric Cards (2 per row on mobile) */}
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-6 lg:grid-cols-4 mb-5 sm:mb-8">
                 {/* Donations Card */}
-                <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md shadow-gray-100/30 dark:border-gray-800 dark:bg-gray-900">
+                <div className="rounded-xl sm:rounded-2xl border border-gray-100 bg-white p-3.5 sm:p-6 shadow-sm sm:shadow-md shadow-gray-100/30 dark:border-gray-800 dark:bg-gray-900">
                     <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-gray-400 dark:text-gray-500">Total Donations</span>
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400">
-                            <TrendingUp className="h-5 w-5" />
+                        <span className="text-xs sm:text-sm font-semibold text-gray-400 dark:text-gray-500 truncate">Donations</span>
+                        <div className="flex h-7 w-7 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400">
+                            <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
                         </div>
                     </div>
-                    <div className="mt-4">
-                        <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <div className="mt-2.5 sm:mt-4">
+                        <span className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
                             {formatCurrency(stats.totalDonations)}
                         </span>
-                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">
-                            Resident ₹{stats.totalResidentDonations.toLocaleString("en-IN")} · External ₹{stats.totalExternalDonorDonations.toLocaleString("en-IN")}
+                        <p className="text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-0.5 sm:mt-1 truncate">
+                            Res ₹{stats.totalResidentDonations.toLocaleString("en-IN")} · Ext ₹{stats.totalExternalDonorDonations.toLocaleString("en-IN")}
                         </p>
                     </div>
                 </div>
 
                 {/* Expenses Card */}
-                <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md shadow-gray-100/30 dark:border-gray-800 dark:bg-gray-900">
+                <div className="rounded-xl sm:rounded-2xl border border-gray-100 bg-white p-3.5 sm:p-6 shadow-sm sm:shadow-md shadow-gray-100/30 dark:border-gray-800 dark:bg-gray-900">
                     <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-gray-400 dark:text-gray-500">Total Expenses</span>
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400">
-                            <TrendingDown className="h-5 w-5" />
+                        <span className="text-xs sm:text-sm font-semibold text-gray-400 dark:text-gray-500 truncate">Expenses</span>
+                        <div className="flex h-7 w-7 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400">
+                            <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5" />
                         </div>
                     </div>
-                    <div className="mt-4">
-                        <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <div className="mt-2.5 sm:mt-4">
+                        <span className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
                             {formatCurrency(stats.totalExpenses)}
                         </span>
-                        <p className="text-xs text-rose-600 dark:text-rose-400 font-medium mt-1">
+                        <p className="text-[10px] sm:text-xs text-rose-600 dark:text-rose-400 font-medium mt-0.5 sm:mt-1 truncate">
                             Outgoing Payments
                         </p>
                     </div>
                 </div>
 
                 {/* Balance Card */}
-                <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md shadow-gray-100/30 dark:border-gray-800 dark:bg-gray-900">
+                <div className="rounded-xl sm:rounded-2xl border border-gray-100 bg-white p-3.5 sm:p-6 shadow-sm sm:shadow-md shadow-gray-100/30 dark:border-gray-800 dark:bg-gray-900">
                     <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-gray-400 dark:text-gray-500">Net Balance</span>
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400">
-                            <Scale className="h-5 w-5" />
+                        <span className="text-xs sm:text-sm font-semibold text-gray-400 dark:text-gray-500 truncate">Net Balance</span>
+                        <div className="flex h-7 w-7 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400">
+                            <Scale className="h-4 w-4 sm:h-5 sm:w-5" />
                         </div>
                     </div>
-                    <div className="mt-4">
-                        <span className={`text-2xl font-bold ${stats.currentBalance >= 0 ? "text-gray-900 dark:text-white" : "text-rose-600"}`}>
+                    <div className="mt-2.5 sm:mt-4">
+                        <span className={`text-lg sm:text-2xl font-bold ${stats.currentBalance >= 0 ? "text-gray-900 dark:text-white" : "text-rose-600"}`}>
                             {formatCurrency(stats.currentBalance)}
                         </span>
-                        <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium mt-1">
+                        <p className="text-[10px] sm:text-xs text-indigo-600 dark:text-indigo-400 font-medium mt-0.5 sm:mt-1 truncate">
                             Available in Ledger
                         </p>
                     </div>
                 </div>
 
                 {/* Total Transactions Card */}
-                <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md shadow-gray-100/30 dark:border-gray-800 dark:bg-gray-900">
+                <div className="rounded-xl sm:rounded-2xl border border-gray-100 bg-white p-3.5 sm:p-6 shadow-sm sm:shadow-md shadow-gray-100/30 dark:border-gray-800 dark:bg-gray-900">
                     <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-gray-400 dark:text-gray-500">Transactions Ledger</span>
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-sky-600 dark:bg-sky-950/30 dark:text-sky-400">
-                            <Activity className="h-5 w-5" />
+                        <span className="text-xs sm:text-sm font-semibold text-gray-400 dark:text-gray-500 truncate">Transactions</span>
+                        <div className="flex h-7 w-7 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-sky-50 text-sky-600 dark:bg-sky-950/30 dark:text-sky-400">
+                            <Activity className="h-4 w-4 sm:h-5 sm:w-5" />
                         </div>
                     </div>
-                    <div className="mt-4">
-                        <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <div className="mt-2.5 sm:mt-4">
+                        <span className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
                             {stats.totalTransactions}
                         </span>
-                        <p className="text-xs text-sky-600 dark:text-sky-400 font-medium mt-1">
+                        <p className="text-[10px] sm:text-xs text-sky-600 dark:text-sky-400 font-medium mt-0.5 sm:mt-1 truncate">
                             Logged Operations
                         </p>
                     </div>
                 </div>
             </div>
 
-            {/* Resident & Household Metric Cards */}
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+            {/* Resident & Household Metric Cards (2 per row on mobile) */}
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-6 lg:grid-cols-4 mb-5 sm:mb-8">
                 {/* Registered Households */}
-                <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md shadow-gray-100/30 dark:border-gray-800 dark:bg-gray-900">
+                <div className="rounded-xl sm:rounded-2xl border border-gray-100 bg-white p-3.5 sm:p-6 shadow-sm sm:shadow-md shadow-gray-100/30 dark:border-gray-800 dark:bg-gray-900">
                     <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-gray-400 dark:text-gray-500">Registered Households</span>
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400">
-                            <HomeIcon className="h-5 w-5" />
+                        <span className="text-xs sm:text-sm font-semibold text-gray-400 dark:text-gray-500 truncate">Households</span>
+                        <div className="flex h-7 w-7 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400">
+                            <HomeIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                         </div>
                     </div>
-                    <div className="mt-4">
-                        <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <div className="mt-2.5 sm:mt-4">
+                        <span className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
                             {stats.residentStats.totalHouseholds}
                         </span>
-                        <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium mt-1">
-                            Active resident families
+                        <p className="text-[10px] sm:text-xs text-indigo-600 dark:text-indigo-400 font-medium mt-0.5 sm:mt-1 truncate">
+                            Active families
                         </p>
                     </div>
                 </div>
 
                 {/* Resident Population */}
-                <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md shadow-gray-100/30 dark:border-gray-800 dark:bg-gray-900">
+                <div className="rounded-xl sm:rounded-2xl border border-gray-100 bg-white p-3.5 sm:p-6 shadow-sm sm:shadow-md shadow-gray-100/30 dark:border-gray-800 dark:bg-gray-900">
                     <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-gray-400 dark:text-gray-500">Resident Population</span>
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-950/30 dark:text-violet-400">
-                            <Users className="h-5 w-5" />
+                        <span className="text-xs sm:text-sm font-semibold text-gray-400 dark:text-gray-500 truncate">Population</span>
+                        <div className="flex h-7 w-7 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-950/30 dark:text-violet-400">
+                            <Users className="h-4 w-4 sm:h-5 sm:w-5" />
                         </div>
                     </div>
-                    <div className="mt-4">
-                        <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <div className="mt-2.5 sm:mt-4">
+                        <span className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
                             {stats.residentStats.totalResidents}
                         </span>
-                        <p className="text-xs text-violet-600 dark:text-violet-400 font-medium mt-1">
-                            Family members in registered flats
+                        <p className="text-[10px] sm:text-xs text-violet-600 dark:text-violet-400 font-medium mt-0.5 sm:mt-1 truncate">
+                            Family members
                         </p>
                     </div>
                 </div>
 
                 {/* Registered Flats */}
-                <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md shadow-gray-100/30 dark:border-gray-800 dark:bg-gray-900">
+                <div className="rounded-xl sm:rounded-2xl border border-gray-100 bg-white p-3.5 sm:p-6 shadow-sm sm:shadow-md shadow-gray-100/30 dark:border-gray-800 dark:bg-gray-900">
                     <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-gray-400 dark:text-gray-500">Flats Registered</span>
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400">
-                            <Building2 className="h-5 w-5" />
+                        <span className="text-xs sm:text-sm font-semibold text-gray-400 dark:text-gray-500 truncate">Flats Reg.</span>
+                        <div className="flex h-7 w-7 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400">
+                            <Building2 className="h-4 w-4 sm:h-5 sm:w-5" />
                         </div>
                     </div>
-                    <div className="mt-4">
-                        <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <div className="mt-2.5 sm:mt-4">
+                        <span className="text-base sm:text-2xl font-bold text-gray-900 dark:text-white">
                             {stats.residentStats.totalRegisteredFlats} / {stats.residentStats.totalExpectedFlats}
                         </span>
-                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">
-                            Registered of {stats.residentStats.totalExpectedFlats} expected flats
+                        <p className="text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-0.5 sm:mt-1 truncate">
+                            Of {stats.residentStats.totalExpectedFlats} flats
                         </p>
                     </div>
                 </div>
 
                 {/* Unregistered + Mahaprasad Meals */}
-                <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-md shadow-gray-100/30 dark:border-gray-800 dark:bg-gray-900">
+                <div className="rounded-xl sm:rounded-2xl border border-gray-100 bg-white p-3.5 sm:p-6 shadow-sm sm:shadow-md shadow-gray-100/30 dark:border-gray-800 dark:bg-gray-900">
                     <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-gray-400 dark:text-gray-500">Remaining / Maha Meals</span>
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400">
-                            <KeyRound className="h-5 w-5" />
+                        <span className="text-xs sm:text-sm font-semibold text-gray-400 dark:text-gray-500 truncate">Remaining</span>
+                        <div className="flex h-7 w-7 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400">
+                            <KeyRound className="h-4 w-4 sm:h-5 sm:w-5" />
                         </div>
                     </div>
-                    <div className="mt-4">
-                        <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <div className="mt-2.5 sm:mt-4">
+                        <span className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
                             {stats.residentStats.remainingFlats}
                         </span>
-                        <p className="text-xs text-amber-600 dark:text-amber-400 font-medium mt-1">
-                            Unregistered · Mahaprasad: {stats.mahaprasad.recommendedMeals} meals
+                        <p className="text-[10px] sm:text-xs text-amber-600 dark:text-amber-400 font-medium mt-0.5 sm:mt-1 truncate">
+                            Meals: {stats.mahaprasad.recommendedMeals}
                         </p>
                     </div>
                 </div>

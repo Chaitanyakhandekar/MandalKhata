@@ -5,6 +5,7 @@ import Login from './pages/auth/Login.jsx'
 import Register from './pages/auth/Register.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Households from './pages/Households.jsx'
+import BuildingFlats from './pages/BuildingFlats.jsx'
 import ExternalDonors from './pages/ExternalDonors.jsx'
 import Donations from './pages/Donations.jsx'
 import Expenses from './pages/Expenses.jsx'
@@ -76,6 +77,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Households />
+            </ProtectedRoute>
+          }
+        />
+        <Route 
+          path='/building-flats' 
+          element={
+            <ProtectedRoute>
+              <BuildingFlats />
             </ProtectedRoute>
           }
         />

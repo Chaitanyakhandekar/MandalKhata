@@ -47,5 +47,17 @@ export const buildingConfigApi = {
                 message: error.response?.data?.message || "Failed to delete building configuration"
             };
         }
+    },
+
+    getFlatsDonationStatus: async (params) => {
+        try {
+            const response = await api.get("/api/building-configs/flats-donation-status", { params });
+            return response.data;
+        } catch (error) {
+            return {
+                success: false,
+                message: error.response?.data?.message || "Failed to fetch flats donation status"
+            };
+        }
     }
 };
