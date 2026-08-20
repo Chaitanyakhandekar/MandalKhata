@@ -523,53 +523,64 @@ const Households = () => {
 
             {activeTab === "households" ? (
                 <>
-                    {/* Filter Bar */}
-                    <div className="mb-6 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-5">
-                            <div className="relative md:col-span-2">
-                                <Search className="absolute top-3 left-3 h-4 w-4 text-gray-400" />
+                    {/* Filter Bar (Compact & Mobile-Optimized) */}
+                    <div className="mb-4 sm:mb-6 rounded-xl sm:rounded-2xl border border-gray-100 bg-white p-2 sm:p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                        <div className="grid grid-cols-2 gap-1.5 sm:gap-3 md:grid-cols-5">
+                            <div className="relative col-span-2 md:col-span-2">
+                                <Search className="absolute top-2 left-2 h-3 w-3 text-gray-400 sm:top-2.5 sm:left-2.5 sm:h-3.5 sm:w-3.5" />
                                 <input
                                     type="text"
                                     placeholder="Search name, phone or flat..."
                                     value={search}
                                     onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                                    className="w-full rounded-xl border border-gray-200 bg-gray-50/50 py-2.5 pl-9 pr-3 text-xs placeholder-gray-400 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950"
+                                    className="w-full rounded-lg sm:rounded-xl border border-gray-200 bg-gray-50/50 py-1 sm:py-2 pl-6 sm:pl-8 pr-6 sm:pr-7 text-[10px] sm:text-xs placeholder:text-[10px] sm:placeholder:text-xs placeholder-gray-400 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950 dark:text-white"
                                 />
+                                {search && (
+                                    <button
+                                        onClick={() => { setSearch(""); setPage(1); }}
+                                        className="absolute right-1.5 top-1.5 sm:right-2 sm:top-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                                    >
+                                        <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                    </button>
+                                )}
                             </div>
-                            <div>
+                            <div className="col-span-1">
                                 <input
                                     type="number"
                                     placeholder="Building No."
                                     value={building}
                                     onChange={(e) => { setBuilding(e.target.value); setPage(1); }}
-                                    className="w-full rounded-xl border border-gray-200 bg-gray-50/50 py-2.5 px-3 text-xs placeholder-gray-400 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950"
+                                    className="w-full rounded-lg sm:rounded-xl border border-gray-200 bg-gray-50/50 py-1 sm:py-2 px-1.5 sm:px-2 text-[10px] sm:text-xs placeholder:text-[10px] sm:placeholder:text-xs placeholder-gray-400 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950 dark:text-white"
                                 />
                             </div>
-                            <div>
+                            <div className="col-span-1">
                                 <input
                                     type="text"
                                     placeholder="Wing (A, B...)"
                                     value={wing}
                                     onChange={(e) => { setWing(e.target.value.toUpperCase()); setPage(1); }}
-                                    className="w-full rounded-xl border border-gray-200 bg-gray-50/50 py-2.5 px-3 text-xs placeholder-gray-400 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950"
+                                    className="w-full rounded-lg sm:rounded-xl border border-gray-200 bg-gray-50/50 py-1 sm:py-2 px-1.5 sm:px-2 text-[10px] sm:text-xs placeholder:text-[10px] sm:placeholder:text-xs placeholder-gray-400 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950 dark:text-white"
                                 />
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-1.5 col-span-2 sm:col-span-1">
                                 <select
                                     value={status}
                                     onChange={(e) => { setStatus(e.target.value); setPage(1); }}
-                                    className="w-full appearance-none rounded-xl border border-gray-200 bg-gray-50/50 py-2.5 px-3 text-xs text-gray-600 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950 dark:text-gray-400"
+                                    className="w-full appearance-none rounded-lg sm:rounded-xl border border-gray-200 bg-gray-50/50 py-1 sm:py-2 px-1.5 sm:px-2 text-[10px] sm:text-xs text-gray-600 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300"
                                 >
                                     <option value="">All Status</option>
                                     <option value="true">Active</option>
                                     <option value="false">Inactive</option>
                                 </select>
-                                <button
-                                    onClick={handleResetFilters}
-                                    className="shrink-0 rounded-xl border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-500 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-950"
-                                >
-                                    Reset
-                                </button>
+                                {(search || building || wing || status) && (
+                                    <button
+                                        onClick={handleResetFilters}
+                                        title="Reset Filters"
+                                        className="shrink-0 rounded-lg sm:rounded-xl border border-gray-200 bg-white px-2 sm:px-2.5 py-1 sm:py-2 text-[10px] sm:text-xs font-semibold text-gray-500 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-400"
+                                    >
+                                        Reset
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
