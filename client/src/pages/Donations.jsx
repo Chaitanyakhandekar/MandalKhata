@@ -526,96 +526,107 @@ const Donations = () => {
     return (
         <Layout>
             {/* Header Title with CTA */}
-            <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div className="mb-4 sm:mb-8 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
+                    <h1 className="text-xl font-bold text-gray-900 dark:text-white sm:text-3xl">
                         Mandal Donations
                     </h1>
-                    <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
+                    <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1 dark:text-gray-400">
                         Record contributions from resident households & external donors ({total} items found)
                     </p>
                 </div>
                 <button
                     onClick={openAddModal}
-                    className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white shadow-md shadow-indigo-600/15 transition-all hover:bg-indigo-700"
+                    className="self-start sm:self-auto flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 sm:px-4 sm:py-2.5 text-xs font-semibold text-white shadow-md shadow-indigo-600/15 transition-all hover:bg-indigo-700"
                 >
-                    <Plus className="h-4.5 w-4.5" />
+                    <Plus className="h-4 w-4" />
                     Record Donation
                 </button>
             </div>
 
-            {/* Advanced Filtering bar */}
-            <div className="mb-6 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+            {/* Advanced Filtering bar (Compact & Mobile-Optimized) */}
+            <div className="mb-4 sm:mb-6 rounded-xl sm:rounded-2xl border border-gray-100 bg-white p-2 sm:p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                <div className="grid grid-cols-2 gap-1.5 sm:gap-3 lg:grid-cols-6">
                     {/* Search Field */}
-                    <div className="relative lg:col-span-2">
-                        <Search className="absolute top-3 left-3 h-4 w-4 text-gray-400" />
+                    <div className="relative col-span-2 lg:col-span-2">
+                        <Search className="absolute top-2 left-2 h-3 w-3 text-gray-400 sm:top-2.5 sm:left-2.5 sm:h-3.5 sm:w-3.5" />
                         <input
                             type="text"
-                            placeholder="Search name or receipt..."
+                            placeholder="Search donor, receipt # or phone..."
                             value={search}
                             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                            className="w-full rounded-xl border border-gray-200 bg-gray-50/50 py-2.5 pl-9 pr-3 text-xs placeholder-gray-400 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950"
+                            className="w-full rounded-lg sm:rounded-xl border border-gray-200 bg-gray-50/50 py-1 sm:py-2 pl-6 sm:pl-8 pr-6 sm:pr-7 text-[10px] sm:text-xs placeholder:text-[10px] sm:placeholder:text-xs placeholder-gray-400 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950 dark:text-white"
                         />
+                        {search && (
+                            <button
+                                onClick={() => { setSearch(""); setPage(1); }}
+                                className="absolute right-1.5 top-1.5 sm:right-2 sm:top-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                            >
+                                <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                            </button>
+                        )}
                     </div>
 
                     {/* Donor Type Selector */}
-                    <div className="relative">
-                        <Users className="absolute top-3 left-3 h-4 w-4 text-gray-400" />
+                    <div className="relative col-span-1">
+                        <Users className="absolute top-2 left-2 h-3 w-3 text-gray-400 sm:top-2.5 sm:left-2.5 sm:h-3.5 sm:w-3.5" />
                         <select
                             value={donorTypeFilter}
                             onChange={(e) => { setDonorTypeFilter(e.target.value); setPage(1); }}
-                            className="w-full appearance-none rounded-xl border border-gray-200 bg-gray-50/50 py-2.5 pl-9 pr-3 text-xs text-gray-600 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950 dark:text-gray-400"
+                            className="w-full text-sm appearance-none rounded-lg sm:rounded-xl border border-gray-200 bg-gray-50/50 py-1 sm:py-2 pl-6 sm:pl-8 pr-2.5 text-[10px] sm:text-xs text-gray-600 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300"
                         >
-                            <option value="">All Donor Types</option>
+                            <option value="" >All Types</option>
                             <option value="resident">Resident</option>
-                            <option value="external">External Donor</option>
+                            <option value="external">External</option>
                         </select>
                     </div>
 
                     {/* Payment Method Selector */}
-                    <div className="relative">
-                        <Filter className="absolute top-3 left-3 h-4 w-4 text-gray-400" />
+                    <div className="relative col-span-1">
+                        <Filter className="absolute top-2 left-2 h-3 w-3 text-gray-400 sm:top-2.5 sm:left-2.5 sm:h-3.5 sm:w-3.5" />
                         <select
                             value={paymentMethod}
                             onChange={(e) => { setPaymentMethod(e.target.value); setPage(1); }}
-                            className="w-full appearance-none rounded-xl border border-gray-200 bg-gray-50/50 py-2.5 pl-9 pr-3 text-xs text-gray-600 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950 dark:text-gray-400"
+                            className="w-full appearance-none rounded-lg sm:rounded-xl border border-gray-200 bg-gray-50/50 py-1 sm:py-2 pl-6 sm:pl-8 pr-2.5 text-[10px] sm:text-xs text-gray-600 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300"
                         >
                             <option value="">All Methods</option>
                             <option value="cash">Cash</option>
                             <option value="upi">UPI</option>
-                            <option value="bank">Bank Transfer</option>
+                            <option value="bank">Bank</option>
                         </select>
                     </div>
 
                     {/* Start Date */}
-                    <div className="relative">
-                        <Calendar className="absolute top-3 left-3 h-4 w-4 text-gray-400" />
+                    <div className="col-span-1">
                         <input
                             type="date"
                             value={startDate}
+                            title="Start Date"
                             onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
-                            className="w-full rounded-xl border border-gray-200 bg-gray-50/50 py-2.5 pl-9 pr-3 text-xs text-gray-500 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950"
+                            className="w-full rounded-lg sm:rounded-xl border border-gray-200 bg-gray-50/50 py-1 sm:py-2 px-1.5 sm:px-2 text-[10px] sm:text-xs text-gray-600 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300"
                         />
                     </div>
 
                     {/* End Date + Reset */}
-                    <div className="flex gap-2">
-                        <div className="relative flex-1">
-                            <Calendar className="absolute top-3 left-3 h-4 w-4 text-gray-400" />
+                    <div className="flex gap-1.5 col-span-1">
+                        <div className="flex-1">
                             <input
                                 type="date"
                                 value={endDate}
+                                title="End Date"
                                 onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
-                                className="w-full rounded-xl border border-gray-200 bg-gray-50/50 py-2.5 pl-9 pr-3 text-xs text-gray-500 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950"
+                                className="w-full rounded-lg sm:rounded-xl border border-gray-200 bg-gray-50/50 py-1 sm:py-2 px-1.5 sm:px-2 text-[10px] sm:text-xs text-gray-600 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300"
                             />
                         </div>
-                        <button
-                            onClick={handleResetFilters}
-                            className="shrink-0 rounded-xl border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-500 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-950"
-                        >
-                            Reset
-                        </button>
+                        {(search || donorTypeFilter || paymentMethod || startDate || endDate) && (
+                            <button
+                                onClick={handleResetFilters}
+                                title="Reset Filters"
+                                className="shrink-0 rounded-lg sm:rounded-xl border border-gray-200 bg-white px-2 sm:px-2.5 py-1 sm:py-2 text-[10px] sm:text-xs font-semibold text-gray-500 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-400"
+                            >
+                                Reset
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -688,13 +699,12 @@ const Donations = () => {
                                                 </td>
                                                 <td className="px-6 py-4.5">
                                                     <span
-                                                        className={`inline-flex items-center rounded-lg px-2.5 py-0.5 text-xs font-semibold ${
-                                                            don.paymentMethod === "cash"
-                                                                ? "bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400"
-                                                                : don.paymentMethod === "upi"
+                                                        className={`inline-flex items-center rounded-lg px-2.5 py-0.5 text-xs font-semibold ${don.paymentMethod === "cash"
+                                                            ? "bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400"
+                                                            : don.paymentMethod === "upi"
                                                                 ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400"
                                                                 : "bg-sky-50 text-sky-700 dark:bg-sky-950/20 dark:text-sky-400"
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {don.paymentMethod.toUpperCase()}
                                                     </span>
@@ -794,13 +804,12 @@ const Donations = () => {
                                                 {badge.label}
                                             </span>
                                             <span
-                                                className={`inline-flex items-center rounded-lg px-2.5 py-0.5 text-[11px] font-semibold ${
-                                                    don.paymentMethod === "cash"
-                                                        ? "bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400"
-                                                        : don.paymentMethod === "upi"
+                                                className={`inline-flex items-center rounded-lg px-2.5 py-0.5 text-[11px] font-semibold ${don.paymentMethod === "cash"
+                                                    ? "bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400"
+                                                    : don.paymentMethod === "upi"
                                                         ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400"
                                                         : "bg-sky-50 text-sky-700 dark:bg-sky-950/20 dark:text-sky-400"
-                                                }`}
+                                                    }`}
                                             >
                                                 {don.paymentMethod.toUpperCase()}
                                             </span>
@@ -894,11 +903,10 @@ const Donations = () => {
                                         <button
                                             type="button"
                                             onClick={() => setDonorType("resident")}
-                                            className={`flex items-center justify-center gap-2 rounded-xl border py-3 text-xs font-bold transition-all ${
-                                                donorType === "resident"
-                                                    ? "border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20"
-                                                    : "border-gray-200 hover:bg-gray-50 dark:border-gray-850"
-                                            }`}
+                                            className={`flex items-center justify-center gap-2 rounded-xl border py-3 text-xs font-bold transition-all ${donorType === "resident"
+                                                ? "border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20"
+                                                : "border-gray-200 hover:bg-gray-50 dark:border-gray-850"
+                                                }`}
                                         >
                                             <HomeIcon className="h-4 w-4" />
                                             Resident Household
@@ -906,11 +914,10 @@ const Donations = () => {
                                         <button
                                             type="button"
                                             onClick={() => setDonorType("external")}
-                                            className={`flex items-center justify-center gap-2 rounded-xl border py-3 text-xs font-bold transition-all ${
-                                                donorType === "external"
-                                                    ? "border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20"
-                                                    : "border-gray-200 hover:bg-gray-50 dark:border-gray-850"
-                                            }`}
+                                            className={`flex items-center justify-center gap-2 rounded-xl border py-3 text-xs font-bold transition-all ${donorType === "external"
+                                                ? "border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20"
+                                                : "border-gray-200 hover:bg-gray-50 dark:border-gray-850"
+                                                }`}
                                         >
                                             <Building2 className="h-4 w-4" />
                                             External Donor
@@ -929,11 +936,10 @@ const Donations = () => {
                                                 <button
                                                     type="button"
                                                     onClick={() => { setResidentMode("select"); setConflictHousehold(null); setConflictMessage(""); }}
-                                                    className={`flex items-center justify-center gap-2 rounded-xl border py-3 text-xs font-bold transition-all ${
-                                                        residentMode === "select"
-                                                            ? "border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20"
-                                                            : "border-gray-200 hover:bg-gray-50 dark:border-gray-850"
-                                                    }`}
+                                                    className={`flex items-center justify-center gap-2 rounded-xl border py-3 text-xs font-bold transition-all ${residentMode === "select"
+                                                        ? "border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20"
+                                                        : "border-gray-200 hover:bg-gray-50 dark:border-gray-850"
+                                                        }`}
                                                 >
                                                     <HomeIcon className="h-4 w-4" />
                                                     Select from Household
@@ -941,11 +947,10 @@ const Donations = () => {
                                                 <button
                                                     type="button"
                                                     onClick={() => { setResidentMode("manual"); setConflictHousehold(null); setConflictMessage(""); }}
-                                                    className={`flex items-center justify-center gap-2 rounded-xl border py-3 text-xs font-bold transition-all ${
-                                                        residentMode === "manual"
-                                                            ? "border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20"
-                                                            : "border-gray-200 hover:bg-gray-50 dark:border-gray-850"
-                                                    }`}
+                                                    className={`flex items-center justify-center gap-2 rounded-xl border py-3 text-xs font-bold transition-all ${residentMode === "manual"
+                                                        ? "border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20"
+                                                        : "border-gray-200 hover:bg-gray-50 dark:border-gray-850"
+                                                        }`}
                                                 >
                                                     <Building2 className="h-4 w-4" />
                                                     Enter Manually & Assign Household
@@ -955,88 +960,88 @@ const Donations = () => {
 
                                         {residentMode === "select" ? (
                                             <>
-                                        {/* Household Selector */}
-                                        <div>
-                                            <label className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                                                Resident Household *
-                                            </label>
-                                            <div className="relative mt-2">
-                                                <Search className="absolute top-3 left-3 h-4 w-4 text-gray-400" />
-                                                <input
-                                                    type="text"
-                                                    value={householdQuery}
-                                                    onChange={(e) => searchHouseholds(e.target.value)}
-                                                    onFocus={() => setShowHouseholdDropdown(true)}
-                                                    placeholder="Search by name, building, wing or flat..."
-                                                    className="w-full rounded-xl border border-gray-200 py-2.5 pl-9 pr-8 text-sm placeholder-gray-400 outline-none transition focus:border-indigo-500 dark:border-gray-850 dark:bg-gray-950"
-                                                />
-                                                {householdQuery && !selectedHousehold && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={clearHousehold}
-                                                        className="absolute top-2.5 right-3 text-gray-400 hover:text-gray-600"
-                                                    >
-                                                        <X className="h-4 w-4" />
-                                                    </button>
-                                                )}
-                                                {showHouseholdDropdown && (
-                                                    <div className="absolute z-20 mt-1.5 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900">
-                                                        {householdSearching ? (
-                                                            <div className="flex items-center justify-center gap-2 py-4">
-                                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent"></div>
-                                                                <span className="text-xs text-gray-400">Searching...</span>
+                                                {/* Household Selector */}
+                                                <div>
+                                                    <label className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                                                        Resident Household *
+                                                    </label>
+                                                    <div className="relative mt-2">
+                                                        <Search className="absolute top-3 left-3 h-4 w-4 text-gray-400" />
+                                                        <input
+                                                            type="text"
+                                                            value={householdQuery}
+                                                            onChange={(e) => searchHouseholds(e.target.value)}
+                                                            onFocus={() => setShowHouseholdDropdown(true)}
+                                                            placeholder="Search by name, building, wing or flat..."
+                                                            className="w-full rounded-xl border border-gray-200 py-2.5 pl-9 pr-8 text-sm placeholder-gray-400 outline-none transition focus:border-indigo-500 dark:border-gray-850 dark:bg-gray-950"
+                                                        />
+                                                        {householdQuery && !selectedHousehold && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={clearHousehold}
+                                                                className="absolute top-2.5 right-3 text-gray-400 hover:text-gray-600"
+                                                            >
+                                                                <X className="h-4 w-4" />
+                                                            </button>
+                                                        )}
+                                                        {showHouseholdDropdown && (
+                                                            <div className="absolute z-20 mt-1.5 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900">
+                                                                {householdSearching ? (
+                                                                    <div className="flex items-center justify-center gap-2 py-4">
+                                                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent"></div>
+                                                                        <span className="text-xs text-gray-400">Searching...</span>
+                                                                    </div>
+                                                                ) : householdResults.length === 0 ? (
+                                                                    <p className="px-4 py-4 text-xs text-gray-400 text-center">
+                                                                        {householdQuery.trim() ? "No matching households. Try a different name or flat number." : "Type to search registered households"}
+                                                                    </p>
+                                                                ) : (
+                                                                    householdResults.map((h) => (
+                                                                        <button
+                                                                            type="button"
+                                                                            key={h._id}
+                                                                            onClick={() => selectHousehold(h)}
+                                                                            className="flex w-full items-start gap-3 border-b border-gray-50 px-4 py-3 text-left hover:bg-indigo-50/50 transition-colors dark:border-gray-800 dark:hover:bg-gray-800/40"
+                                                                        >
+                                                                            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-xs font-bold text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400">
+                                                                                B{h.building}
+                                                                            </div>
+                                                                            <div className="min-w-0 flex-1">
+                                                                                <div className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                                                                                    Wing {h.wing} · Flat {h.flatNumber}
+                                                                                </div>
+                                                                                <div className="truncate text-[11px] text-gray-400">
+                                                                                    {h.headOfFamily} · {h.memberCount} {h.memberCount === 1 ? "member" : "members"} · {h.phone || "no phone"}
+                                                                                </div>
+                                                                            </div>
+                                                                        </button>
+                                                                    ))
+                                                                )}
                                                             </div>
-                                                        ) : householdResults.length === 0 ? (
-                                                            <p className="px-4 py-4 text-xs text-gray-400 text-center">
-                                                                {householdQuery.trim() ? "No matching households. Try a different name or flat number." : "Type to search registered households"}
-                                                            </p>
-                                                        ) : (
-                                                            householdResults.map((h) => (
-                                                                <button
-                                                                    type="button"
-                                                                    key={h._id}
-                                                                    onClick={() => selectHousehold(h)}
-                                                                    className="flex w-full items-start gap-3 border-b border-gray-50 px-4 py-3 text-left hover:bg-indigo-50/50 transition-colors dark:border-gray-800 dark:hover:bg-gray-800/40"
-                                                                >
-                                                                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-xs font-bold text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400">
-                                                                        B{h.building}
-                                                                    </div>
-                                                                    <div className="min-w-0 flex-1">
-                                                                        <div className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                                                                            Wing {h.wing} · Flat {h.flatNumber}
-                                                                        </div>
-                                                                        <div className="truncate text-[11px] text-gray-400">
-                                                                            {h.headOfFamily} · {h.memberCount} {h.memberCount === 1 ? "member" : "members"} · {h.phone || "no phone"}
-                                                                        </div>
-                                                                    </div>
-                                                                </button>
-                                                            ))
                                                         )}
                                                     </div>
-                                                )}
-                                            </div>
 
-                                            {/* Selected Household Card */}
-                                            {selectedHousehold && (
-                                                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-indigo-200 bg-indigo-50/50 px-4 py-3 dark:border-indigo-900/50 dark:bg-indigo-950/20">
-                                                    <div>
-                                                        <div className="flex flex-wrap items-center gap-2">
-                                                            <HomeIcon className="h-4 w-4 shrink-0 text-indigo-500" />
-                                                            <span className="text-sm font-bold text-indigo-700 dark:text-indigo-300">
-                                                                Building {selectedHousehold.building} · Wing {selectedHousehold.wing} · Flat {selectedHousehold.flatNumber}
-                                                            </span>
+                                                    {/* Selected Household Card */}
+                                                    {selectedHousehold && (
+                                                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-indigo-200 bg-indigo-50/50 px-4 py-3 dark:border-indigo-900/50 dark:bg-indigo-950/20">
+                                                            <div>
+                                                                <div className="flex flex-wrap items-center gap-2">
+                                                                    <HomeIcon className="h-4 w-4 shrink-0 text-indigo-500" />
+                                                                    <span className="text-sm font-bold text-indigo-700 dark:text-indigo-300">
+                                                                        Building {selectedHousehold.building} · Wing {selectedHousehold.wing} · Flat {selectedHousehold.flatNumber}
+                                                                    </span>
+                                                                </div>
+                                                                <p className="text-xs text-indigo-600/80 dark:text-indigo-400/80 mt-1">
+                                                                    {selectedHousehold.headOfFamily} · {selectedHousehold.phone || "no phone"}
+                                                                </p>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1 text-xs font-semibold text-indigo-600 dark:bg-gray-900 dark:text-indigo-400">
+                                                                <Users className="h-3.5 w-3.5" />
+                                                                {selectedHousehold.memberCount} {selectedHousehold.memberCount === 1 ? "member" : "members"}
+                                                            </div>
                                                         </div>
-                                                        <p className="text-xs text-indigo-600/80 dark:text-indigo-400/80 mt-1">
-                                                            {selectedHousehold.headOfFamily} · {selectedHousehold.phone || "no phone"}
-                                                        </p>
-                                                    </div>
-                                                    <div className="flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1 text-xs font-semibold text-indigo-600 dark:bg-gray-900 dark:text-indigo-400">
-                                                        <Users className="h-3.5 w-3.5" />
-                                                        {selectedHousehold.memberCount} {selectedHousehold.memberCount === 1 ? "member" : "members"}
-                                                    </div>
+                                                    )}
                                                 </div>
-                                            )}
-                                        </div>
                                             </>
                                         ) : (
                                             <>
@@ -1178,22 +1183,20 @@ const Donations = () => {
                                             <button
                                                 type="button"
                                                 onClick={() => setDonorMode("existing")}
-                                                className={`rounded-xl border px-4 py-2 text-xs font-semibold transition-all ${
-                                                    donorMode === "existing"
-                                                        ? "border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20"
-                                                        : "border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-850"
-                                                }`}
+                                                className={`rounded-xl border px-4 py-2 text-xs font-semibold transition-all ${donorMode === "existing"
+                                                    ? "border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20"
+                                                    : "border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-850"
+                                                    }`}
                                             >
                                                 Select Existing Donor
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={() => setDonorMode("new")}
-                                                className={`rounded-xl border px-4 py-2 text-xs font-semibold transition-all ${
-                                                    donorMode === "new"
-                                                        ? "border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20"
-                                                        : "border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-850"
-                                                }`}
+                                                className={`rounded-xl border px-4 py-2 text-xs font-semibold transition-all ${donorMode === "new"
+                                                    ? "border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20"
+                                                    : "border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-850"
+                                                    }`}
                                             >
                                                 Add New Donor
                                             </button>

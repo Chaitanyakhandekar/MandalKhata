@@ -241,46 +241,54 @@ const Expenses = () => {
     return (
         <Layout>
             {/* Header section with CTA */}
-            <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div className="mb-4 sm:mb-8 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
+                    <h1 className="text-xl font-bold text-gray-900 dark:text-white sm:text-3xl">
                         Mandal Expenses
                     </h1>
-                    <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
+                    <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1 dark:text-gray-400">
                         Track and audit outgoing expenses and uploaded bills ({total} items found)
                     </p>
                 </div>
                 <button
                     onClick={openAddModal}
-                    className="flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2.5 text-xs font-semibold text-white shadow-md shadow-rose-600/15 transition-all hover:bg-rose-700"
+                    className="self-start sm:self-auto flex items-center gap-1.5 rounded-xl bg-rose-600 px-3.5 py-2 sm:px-4 sm:py-2.5 text-xs font-semibold text-white shadow-md shadow-rose-600/15 transition-all hover:bg-rose-700"
                 >
-                    <Plus className="h-4.5 w-4.5" />
+                    <Plus className="h-4 w-4" />
                     Record Expense
                 </button>
             </div>
 
-            {/* Filtering Bar */}
-            <div className="mb-6 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+            {/* Filtering Bar (Compact & Mobile-Optimized) */}
+            <div className="mb-4 sm:mb-6 rounded-xl sm:rounded-2xl border border-gray-100 bg-white p-2 sm:p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                <div className="grid grid-cols-2 gap-1.5 sm:gap-3 lg:grid-cols-5">
                     {/* Search Field */}
-                    <div className="relative lg:col-span-2">
-                        <Search className="absolute top-3 left-3 h-4 w-4 text-gray-400" />
+                    <div className="relative col-span-2 lg:col-span-2">
+                        <Search className="absolute top-2 left-2 h-3 w-3 text-gray-400 sm:top-2.5 sm:left-2.5 sm:h-3.5 sm:w-3.5" />
                         <input
                             type="text"
                             placeholder="Search title, vendor..."
                             value={search}
                             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                            className="w-full rounded-xl border border-gray-200 bg-gray-50/50 py-2.5 pl-9 pr-3 text-xs placeholder-gray-400 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950"
+                            className="w-full rounded-lg sm:rounded-xl border border-gray-200 bg-gray-50/50 py-1 sm:py-2 pl-6 sm:pl-8 pr-6 sm:pr-7 text-[10px] sm:text-xs placeholder:text-[10px] sm:placeholder:text-xs placeholder-gray-400 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950 dark:text-white"
                         />
+                        {search && (
+                            <button
+                                onClick={() => { setSearch(""); setPage(1); }}
+                                className="absolute right-1.5 top-1.5 sm:right-2 sm:top-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                            >
+                                <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                            </button>
+                        )}
                     </div>
 
                     {/* Category Selector */}
-                    <div className="relative">
-                        <Filter className="absolute top-3 left-3 h-4 w-4 text-gray-400" />
+                    <div className="relative col-span-1">
+                        <Filter className="absolute top-2 left-2 h-3 w-3 text-gray-400 sm:top-2.5 sm:left-2.5 sm:h-3.5 sm:w-3.5" />
                         <select
                             value={category}
                             onChange={(e) => { setCategory(e.target.value); setPage(1); }}
-                            className="w-full appearance-none rounded-xl border border-gray-200 bg-gray-50/50 py-2.5 pl-9 pr-3 text-xs text-gray-600 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950 dark:text-gray-400"
+                            className="w-full appearance-none rounded-lg sm:rounded-xl border border-gray-200 bg-gray-50/50 py-1 sm:py-2 pl-6 sm:pl-8 pr-2.5 text-[10px] sm:text-xs text-gray-600 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300"
                         >
                             <option value="">All Categories</option>
                             {EXPENSE_CATEGORIES.map((cat) => (
@@ -292,12 +300,12 @@ const Expenses = () => {
                     </div>
 
                     {/* Payment Status Selector */}
-                    <div className="relative">
-                        <Filter className="absolute top-3 left-3 h-4 w-4 text-gray-400" />
+                    <div className="relative col-span-1">
+                        <Filter className="absolute top-2 left-2 h-3 w-3 text-gray-400 sm:top-2.5 sm:left-2.5 sm:h-3.5 sm:w-3.5" />
                         <select
                             value={paymentStatus}
                             onChange={(e) => { setPaymentStatus(e.target.value); setPage(1); }}
-                            className="w-full appearance-none rounded-xl border border-gray-200 bg-gray-50/50 py-2.5 pl-9 pr-3 text-xs text-gray-600 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950 dark:text-gray-400"
+                            className="w-full appearance-none rounded-lg sm:rounded-xl border border-gray-200 bg-gray-50/50 py-1 sm:py-2 pl-6 sm:pl-8 pr-2.5 text-[10px] sm:text-xs text-gray-600 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300"
                         >
                             <option value="">All Statuses</option>
                             <option value="paid">Paid</option>
@@ -305,25 +313,26 @@ const Expenses = () => {
                         </select>
                     </div>
 
-                    {/* Start Date */}
-                    <div className="relative">
-                        <Calendar className="absolute top-3 left-3 h-4 w-4 text-gray-400" />
-                        <input
-                            type="date"
-                            value={startDate}
-                            onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
-                            className="w-full rounded-xl border border-gray-200 bg-gray-50/50 py-2.5 pl-9 pr-3 text-xs text-gray-500 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950"
-                        />
-                    </div>
-
-                    {/* Reset Button */}
-                    <div>
-                        <button
-                            onClick={handleResetFilters}
-                            className="w-full rounded-xl border border-gray-200 bg-white py-2.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-950 dark:hover:bg-gray-850"
-                        >
-                            Reset Filters
-                        </button>
+                    {/* Start Date + Reset */}
+                    <div className="flex gap-1.5 col-span-2 sm:col-span-1">
+                        <div className="flex-1">
+                            <input
+                                type="date"
+                                value={startDate}
+                                title="Filter Date"
+                                onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
+                                className="w-full rounded-lg sm:rounded-xl border border-gray-200 bg-gray-50/50 py-1 sm:py-2 px-1.5 sm:px-2 text-[10px] sm:text-xs text-gray-600 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300"
+                            />
+                        </div>
+                        {(search || category || paymentStatus || startDate) && (
+                            <button
+                                onClick={handleResetFilters}
+                                title="Reset Filters"
+                                className="shrink-0 rounded-lg sm:rounded-xl border border-gray-200 bg-white px-2 sm:px-2.5 py-1 sm:py-2 text-[10px] sm:text-xs font-semibold text-gray-500 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-400"
+                            >
+                                Reset
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
