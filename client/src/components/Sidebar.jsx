@@ -12,7 +12,9 @@ import {
     Home as HomeIcon,
     Building2,
     UtensilsCrossed,
-    FileSpreadsheet
+    FileSpreadsheet,
+    Layers,
+    Users
 } from "lucide-react";
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
@@ -20,6 +22,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
     const menuItems = [
         { name: "Dashboard", path: "/", icon: LayoutDashboard },
+        { name: "Building Flats", path: "/building-flats", icon: Layers },
         { name: "Households", path: "/households", icon: HomeIcon },
         { name: "External Donors", path: "/external-donors", icon: Building2 },
         { name: "Donations", path: "/donations", icon: Coins },
