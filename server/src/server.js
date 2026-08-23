@@ -55,6 +55,15 @@ import externalDonorRouter from "./routes/externalDonor.route.js"
 import mahaprasadRouter from "./routes/mahaprasad.route.js"
 import bulkImportRouter from "./routes/bulkImport.route.js"
 
+app.get("/api/health", (req, res) => {
+    return res
+        .status(200)
+        .json({
+            success: true,
+            message: "server is up."
+        })
+})
+
 app.use("/api/users", userRouter)
 app.use("/api/festivals", festivalRouter)
 app.use("/api/donations", donationRouter)
