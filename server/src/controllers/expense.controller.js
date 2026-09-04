@@ -1,8 +1,10 @@
 import { Expense } from "../models/expense.model.js";
+import { Category } from "../models/category.model.js";
 import { FestivalYear } from "../models/festivalYear.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/apiUtils.js";
 import { uploadFileOnCloudinary, deleteFileFromCloudinary } from "../services/cloudinary.service.js";
+import { DEFAULT_EXPENSE_CATEGORIES, normalizeCategoryName } from "../constants/categories.js";
 
 const getExpenses = asyncHandler(async (req, res) => {
     const { festivalYear, search, category, paymentStatus, startDate, endDate, page = 1, limit = 50 } = req.query;
@@ -30,8 +32,8 @@ const getExpenses = asyncHandler(async (req, res) => {
     }
 
     // Category filter
-    if (category && ["Decoration", "Sound", "Lighting", "Food", "Security", "Visarjan", "Miscellaneous"].includes(category)) {
-        query.category = category;
+    if (category && typeof category === "string" && category.trim()) {
+        query.category = category.trim();
     }
 
     // Payment status filter
@@ -52,21 +54,31 @@ const getExpenses = asyncHandler(async (req, res) => {
         }
     }
 
-    const skipIndex = (parseInt(page) - 1) * parseInt(limit);
+    const pageNum = Math.max(parseInt(page) || 1, 1);
+    const limitNum = Math.min(Math.max(parseInt(limit) || 50, 1), 100);
+    const skipIndex = (pageNum - 1) * limitNum;
 
-    const expenses = await Expense.find(query)
-        .sort({ date: -1, createdAt: -1 })
-        .skip(skipIndex)
-        .limit(parseInt(limit))
-        .populate("createdBy", "name username");
+    const [expenses, total, amountAggregate] = await Promise.all([
+        Expense.find(query)
+            .sort({ date: -1, createdAt: -1 })
+            .skip(skipIndex)
+            .limit(limitNum)
+            .populate("createdBy", "name username"),
+        Expense.countDocuments(query),
+        Expense.aggregate([
+            { $match: query },
+            { $group: { _id: null, totalAmount: { $sum: "$amount" } } }
+        ])
+    ]);
 
-    const total = await Expense.countDocuments(query);
+    const totalAmount = amountAggregate && amountAggregate[0]?.totalAmount != null ? amountAggregate[0].totalAmount : 0;
 
     return res.status(200).json(new ApiResponse(200, {
         expenses,
         total,
-        page: parseInt(page),
-        pages: Math.ceil(total / parseInt(limit))
+        totalAmount,
+        page: pageNum,
+        pages: Math.ceil(total / limitNum)
     }, "Expenses fetched successfully"));
 });
 
@@ -81,8 +93,45 @@ const createExpense = asyncHandler(async (req, res) => {
         return res.status(400).json(new ApiResponse(400, null, "Valid expense amount is required", false));
     }
 
-    if (!category || !["Decoration", "Sound", "Lighting", "Food", "Security", "Visarjan", "Miscellaneous"].includes(category)) {
+    if (!category || typeof category !== "string" || !category.trim()) {
         return res.status(400).json(new ApiResponse(400, null, "Valid category is required", false));
+    }
+
+    const trimmedCategory = category.trim();
+    const normalizedCategory = normalizeCategoryName(trimmedCategory);
+
+    // Check system category
+    const systemCategoryMatch = DEFAULT_EXPENSE_CATEGORIES.find(
+        (c) => normalizeCategoryName(c) === normalizedCategory
+    );
+
+    let resolvedCategoryName = "";
+    let resolvedCategoryId = null;
+
+    if (systemCategoryMatch) {
+        resolvedCategoryName = systemCategoryMatch;
+    } else {
+        // Look up active custom category for user
+        const customCategory = await Category.findOne({
+            createdBy: req.user._id,
+            normalizedName: normalizedCategory,
+            isActive: true
+        });
+
+        if (!customCategory) {
+            const inactiveCategory = await Category.findOne({
+                createdBy: req.user._id,
+                normalizedName: normalizedCategory,
+                isActive: false
+            });
+            if (inactiveCategory) {
+                return res.status(400).json(new ApiResponse(400, null, `Category '${inactiveCategory.name}' is deactivated and cannot be used for new expenses`, false));
+            }
+            return res.status(400).json(new ApiResponse(400, null, "Valid category is required", false));
+        }
+
+        resolvedCategoryName = customCategory.name;
+        resolvedCategoryId = customCategory._id;
     }
 
     // Resolve festival year
@@ -111,7 +160,8 @@ const createExpense = asyncHandler(async (req, res) => {
     const expense = await Expense.create({
         title: title.trim(),
         amount: Number(amount),
-        category,
+        category: resolvedCategoryName,
+        categoryId: resolvedCategoryId,
         vendorName: vendorName ? vendorName.trim() : "",
         paymentStatus: paymentStatus || "paid",
         billImage,
@@ -149,10 +199,39 @@ const updateExpense = asyncHandler(async (req, res) => {
         updateData.amount = Number(amount);
     }
     if (category !== undefined) {
-        if (!["Decoration", "Sound", "Lighting", "Food", "Security", "Visarjan", "Miscellaneous"].includes(category)) {
+        if (typeof category !== "string" || !category.trim()) {
             return res.status(400).json(new ApiResponse(400, null, "Invalid category", false));
         }
-        updateData.category = category;
+
+        const trimmedCategory = category.trim();
+        const normalizedCategory = normalizeCategoryName(trimmedCategory);
+
+        const systemCategoryMatch = DEFAULT_EXPENSE_CATEGORIES.find(
+            (c) => normalizeCategoryName(c) === normalizedCategory
+        );
+
+        if (systemCategoryMatch) {
+            updateData.category = systemCategoryMatch;
+            updateData.categoryId = null;
+        } else {
+            // Find custom category (active, or already linked to this expense)
+            const customCategory = await Category.findOne({
+                createdBy: req.user._id,
+                normalizedName: normalizedCategory
+            });
+
+            if (!customCategory) {
+                return res.status(400).json(new ApiResponse(400, null, "Invalid category", false));
+            }
+
+            // If deactivated, only allow if the expense already had this category
+            if (!customCategory.isActive && expense.category !== customCategory.name && String(expense.categoryId) !== String(customCategory._id)) {
+                return res.status(400).json(new ApiResponse(400, null, `Category '${customCategory.name}' is deactivated and cannot be selected`, false));
+            }
+
+            updateData.category = customCategory.name;
+            updateData.categoryId = customCategory._id;
+        }
     }
     if (vendorName !== undefined) updateData.vendorName = vendorName.trim();
     if (paymentStatus !== undefined) updateData.paymentStatus = paymentStatus;

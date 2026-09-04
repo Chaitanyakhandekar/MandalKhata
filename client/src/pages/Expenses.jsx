@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import Layout from "../components/Layout.jsx";
 import { expenseApi } from "../api/expense.api.js";
+import { categoryApi } from "../api/category.api.js";
 import { useMandalStore } from "../store/useMandalStore.js";
 import {
     Plus,
@@ -19,7 +20,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 
-const EXPENSE_CATEGORIES = [
+const DEFAULT_EXPENSE_CATEGORIES = [
     "Decoration",
     "Sound",
     "Lighting",
@@ -35,6 +36,7 @@ const Expenses = () => {
     // List State
     const [expenses, setExpenses] = useState([]);
     const [total, setTotal] = useState(0);
+    const [totalAmount, setTotalAmount] = useState(0);
     const [page, setPage] = useState(1);
     const [pages, setPages] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -65,6 +67,38 @@ const Expenses = () => {
     // Bill Image Overlay Modal State
     const [previewImageUrl, setPreviewImageUrl] = useState("");
 
+    // Dynamic Categories State
+    const [allCategories, setAllCategories] = useState(DEFAULT_EXPENSE_CATEGORIES);
+    const [activeCategories, setActiveCategories] = useState(DEFAULT_EXPENSE_CATEGORIES);
+
+    const fetchCategories = useCallback(async () => {
+        try {
+            const response = await categoryApi.getCategories();
+            if (response && response.success && response.data) {
+                if (Array.isArray(response.data.allCategories) && response.data.allCategories.length > 0) {
+                    setAllCategories(response.data.allCategories);
+                }
+                if (Array.isArray(response.data.allActiveCategories) && response.data.allActiveCategories.length > 0) {
+                    setActiveCategories(response.data.allActiveCategories);
+                }
+            }
+        } catch {
+            // Keep default fallback
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchCategories();
+    }, [fetchCategories]);
+
+    // Ensure form select includes current category even if deactivated
+    const formCategories = useMemo(() => {
+        if (formData.category && !activeCategories.includes(formData.category)) {
+            return [...activeCategories, formData.category];
+        }
+        return activeCategories;
+    }, [activeCategories, formData.category]);
+
     const fetchExpenses = useCallback(async () => {
         if (!selectedYear) return;
         setLoading(true);
@@ -82,6 +116,7 @@ const Expenses = () => {
             if (response.success) {
                 setExpenses(response.data.expenses);
                 setTotal(response.data.total);
+                setTotalAmount(response.data.totalAmount || 0);
                 setPages(response.data.pages);
             } else {
                 toast.error(response.message || "Failed to load expenses");
@@ -291,7 +326,7 @@ const Expenses = () => {
                             className="w-full appearance-none rounded-lg sm:rounded-xl border border-gray-200 bg-gray-50/50 py-1 sm:py-2 pl-6 sm:pl-8 pr-2.5 text-[10px] sm:text-xs text-gray-600 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300"
                         >
                             <option value="">All Categories</option>
-                            {EXPENSE_CATEGORIES.map((cat) => (
+                            {allCategories.map((cat) => (
                                 <option key={cat} value={cat}>
                                     {cat}
                                 </option>
@@ -337,6 +372,53 @@ const Expenses = () => {
                 </div>
             </div>
 
+            {/* Dynamic Total Expenses Summary Card */}
+            {(() => {
+                const hasActiveFilters = Boolean((search && search.trim()) || category || paymentStatus || startDate || endDate);
+                return (
+                    <div className="mb-4 sm:mb-6 rounded-xl sm:rounded-2xl border border-gray-100 bg-white p-3.5 sm:p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400">
+                                    <Receipt className="h-5 w-5" />
+                                </div>
+                                <div className="min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                            Total Expenses
+                                        </span>
+                                        {hasActiveFilters ? (
+                                            <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
+                                                <Filter className="h-2.5 w-2.5" />
+                                                Filtered ({total} {total === 1 ? "expense" : "expenses"})
+                                            </span>
+                                        ) : (
+                                            <span className="rounded-md bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                                                Year {selectedYear}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-[11px] text-gray-400 mt-0.5 truncate">
+                                        {hasActiveFilters
+                                            ? `Showing sum of ${total} matching ${total === 1 ? "expense" : "expenses"} based on active filters`
+                                            : `Total of all ${total} ${total === 1 ? "expense" : "expenses"} recorded for festival year ${selectedYear}`}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-baseline justify-between sm:justify-end gap-2 border-t border-gray-100 pt-2.5 sm:border-0 sm:pt-0 dark:border-gray-800">
+                                <span className="text-xs font-medium text-gray-400 sm:hidden">
+                                    Total Amount:
+                                </span>
+                                <span className="text-xl sm:text-2xl font-bold tracking-tight text-rose-600 dark:text-rose-400">
+                                    {formatCurrency(totalAmount)}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+
             {/* List Table Container */}
             <div className="rounded-2xl border border-gray-100 bg-white shadow-md shadow-gray-100/30 dark:border-gray-800 dark:bg-gray-900">
                 {loading ? (
@@ -349,8 +431,22 @@ const Expenses = () => {
                 ) : expenses.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 text-center">
                         <Receipt className="h-12 w-12 text-gray-300 mb-3" />
-                        <p className="text-sm font-bold text-gray-400 dark:text-gray-500">No expenses logged</p>
-                        <p className="text-xs text-gray-400 mt-1">Start by recording your first expense for {selectedYear}!</p>
+                        <p className="text-sm font-bold text-gray-400 dark:text-gray-500">
+                            {(Boolean((search && search.trim()) || category || paymentStatus || startDate || endDate)) ? "No matching expenses found" : "No expenses logged"}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                            {(Boolean((search && search.trim()) || category || paymentStatus || startDate || endDate))
+                                ? "0 matching expenses. Try adjusting or clearing your filters to see more results."
+                                : `Start by recording your first expense for ${selectedYear}!`}
+                        </p>
+                        {(Boolean((search && search.trim()) || category || paymentStatus || startDate || endDate)) && (
+                            <button
+                                onClick={handleResetFilters}
+                                className="mt-4 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold text-gray-600 shadow-sm hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300 dark:hover:bg-gray-900"
+                            >
+                                Clear All Filters
+                            </button>
+                        )}
                     </div>
                 ) : (
                     <>
@@ -450,6 +546,17 @@ const Expenses = () => {
                                         </tr>
                                     ))}
                                 </tbody>
+                                <tfoot>
+                                    <tr className="bg-gray-50/80 border-t border-gray-200 dark:bg-gray-800/20 dark:border-gray-800">
+                                        <td colSpan="6" className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                            Total ({total} {total === 1 ? "expense" : "expenses"})
+                                        </td>
+                                        <td className="px-6 py-4 text-right font-bold text-sm text-rose-600 dark:text-rose-400">
+                                            {formatCurrency(totalAmount)}
+                                        </td>
+                                        <td className="px-6 py-4"></td>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
 
@@ -540,6 +647,15 @@ const Expenses = () => {
                                     </div>
                                 </div>
                             ))}
+                            {/* Mobile total row */}
+                            <div className="flex items-center justify-between bg-gray-50/80 px-5 py-4 dark:bg-gray-800/20 border-t border-gray-100 dark:border-gray-800">
+                                <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    Total ({total} {total === 1 ? "expense" : "expenses"})
+                                </span>
+                                <span className="text-sm font-bold text-rose-600 dark:text-rose-400">
+                                    {formatCurrency(totalAmount)}
+                                </span>
+                            </div>
                         </div>
 
                         {/* Pagination component */}
@@ -632,7 +748,7 @@ const Expenses = () => {
                                             onChange={handleInputChange}
                                             className="mt-2 w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-500 dark:border-gray-850 dark:bg-gray-950"
                                         >
-                                            {EXPENSE_CATEGORIES.map((cat) => (
+                                            {formCategories.map((cat) => (
                                                 <option key={cat} value={cat}>
                                                     {cat}
                                                 </option>

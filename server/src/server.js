@@ -48,6 +48,7 @@ import userRouter from "./routes/user.route.js"
 import festivalRouter from "./routes/festival.route.js"
 import donationRouter from "./routes/donation.route.js"
 import expenseRouter from "./routes/expense.route.js"
+import categoryRouter from "./routes/category.route.js"
 import reportRouter from "./routes/report.route.js"
 import householdRouter from "./routes/household.route.js"
 import buildingConfigRouter from "./routes/buildingConfig.route.js"
@@ -68,6 +69,7 @@ app.use("/api/users", userRouter)
 app.use("/api/festivals", festivalRouter)
 app.use("/api/donations", donationRouter)
 app.use("/api/expenses", expenseRouter)
+app.use("/api/categories", categoryRouter)
 app.use("/api/reports", reportRouter)
 app.use("/api/households", householdRouter)
 app.use("/api/building-configs", buildingConfigRouter)
