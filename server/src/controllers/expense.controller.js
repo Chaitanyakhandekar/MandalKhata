@@ -54,21 +54,31 @@ const getExpenses = asyncHandler(async (req, res) => {
         }
     }
 
-    const skipIndex = (parseInt(page) - 1) * parseInt(limit);
+    const pageNum = Math.max(parseInt(page) || 1, 1);
+    const limitNum = Math.min(Math.max(parseInt(limit) || 50, 1), 100);
+    const skipIndex = (pageNum - 1) * limitNum;
 
-    const expenses = await Expense.find(query)
-        .sort({ date: -1, createdAt: -1 })
-        .skip(skipIndex)
-        .limit(parseInt(limit))
-        .populate("createdBy", "name username");
+    const [expenses, total, amountAggregate] = await Promise.all([
+        Expense.find(query)
+            .sort({ date: -1, createdAt: -1 })
+            .skip(skipIndex)
+            .limit(limitNum)
+            .populate("createdBy", "name username"),
+        Expense.countDocuments(query),
+        Expense.aggregate([
+            { $match: query },
+            { $group: { _id: null, totalAmount: { $sum: "$amount" } } }
+        ])
+    ]);
 
-    const total = await Expense.countDocuments(query);
+    const totalAmount = amountAggregate && amountAggregate[0]?.totalAmount != null ? amountAggregate[0].totalAmount : 0;
 
     return res.status(200).json(new ApiResponse(200, {
         expenses,
         total,
-        page: parseInt(page),
-        pages: Math.ceil(total / parseInt(limit))
+        totalAmount,
+        page: pageNum,
+        pages: Math.ceil(total / limitNum)
     }, "Expenses fetched successfully"));
 });
 
