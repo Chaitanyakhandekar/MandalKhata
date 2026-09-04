@@ -13,8 +13,13 @@ const expenseSchema = new mongoose.Schema({
     },
     category: {
         type: String,
-        enum: ["Decoration", "Sound", "Lighting", "Food", "Security", "Visarjan", "Miscellaneous"],
-        required: true
+        required: true,
+        trim: true
+    },
+    categoryId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Category",
+        default: null
     },
     vendorName: {
         type: String,

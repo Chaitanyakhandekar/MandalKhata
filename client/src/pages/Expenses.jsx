@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import Layout from "../components/Layout.jsx";
 import { expenseApi } from "../api/expense.api.js";
+import { categoryApi } from "../api/category.api.js";
 import { useMandalStore } from "../store/useMandalStore.js";
 import {
     Plus,
@@ -19,7 +20,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 
-const EXPENSE_CATEGORIES = [
+const DEFAULT_EXPENSE_CATEGORIES = [
     "Decoration",
     "Sound",
     "Lighting",
@@ -64,6 +65,38 @@ const Expenses = () => {
 
     // Bill Image Overlay Modal State
     const [previewImageUrl, setPreviewImageUrl] = useState("");
+
+    // Dynamic Categories State
+    const [allCategories, setAllCategories] = useState(DEFAULT_EXPENSE_CATEGORIES);
+    const [activeCategories, setActiveCategories] = useState(DEFAULT_EXPENSE_CATEGORIES);
+
+    const fetchCategories = useCallback(async () => {
+        try {
+            const response = await categoryApi.getCategories();
+            if (response && response.success && response.data) {
+                if (Array.isArray(response.data.allCategories) && response.data.allCategories.length > 0) {
+                    setAllCategories(response.data.allCategories);
+                }
+                if (Array.isArray(response.data.allActiveCategories) && response.data.allActiveCategories.length > 0) {
+                    setActiveCategories(response.data.allActiveCategories);
+                }
+            }
+        } catch {
+            // Keep default fallback
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchCategories();
+    }, [fetchCategories]);
+
+    // Ensure form select includes current category even if deactivated
+    const formCategories = useMemo(() => {
+        if (formData.category && !activeCategories.includes(formData.category)) {
+            return [...activeCategories, formData.category];
+        }
+        return activeCategories;
+    }, [activeCategories, formData.category]);
 
     const fetchExpenses = useCallback(async () => {
         if (!selectedYear) return;
@@ -291,7 +324,7 @@ const Expenses = () => {
                             className="w-full appearance-none rounded-lg sm:rounded-xl border border-gray-200 bg-gray-50/50 py-1 sm:py-2 pl-6 sm:pl-8 pr-2.5 text-[10px] sm:text-xs text-gray-600 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300"
                         >
                             <option value="">All Categories</option>
-                            {EXPENSE_CATEGORIES.map((cat) => (
+                            {allCategories.map((cat) => (
                                 <option key={cat} value={cat}>
                                     {cat}
                                 </option>
@@ -632,7 +665,7 @@ const Expenses = () => {
                                             onChange={handleInputChange}
                                             className="mt-2 w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-indigo-500 dark:border-gray-850 dark:bg-gray-950"
                                         >
-                                            {EXPENSE_CATEGORIES.map((cat) => (
+                                            {formCategories.map((cat) => (
                                                 <option key={cat} value={cat}>
                                                     {cat}
                                                 </option>

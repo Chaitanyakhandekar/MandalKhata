@@ -3,6 +3,7 @@ import { BuildingConfig } from "../models/buildingConfig.model.js";
 import { Household } from "../models/household.model.js";
 import { Donation } from "../models/donation.model.js";
 import { Expense } from "../models/expense.model.js";
+import { Category } from "../models/category.model.js";
 import { ExternalDonor } from "../models/externalDonor.model.js";
 import { FestivalYear } from "../models/festivalYear.model.js";
 import {
@@ -98,9 +99,9 @@ const TEMPLATES = {
         ],
         instructions: [
             "Required: Title, Category, Amount.",
-            "Category must be one of the existing categories: Decoration, Sound, Lighting, Food,",
+            "Category must be one of the default categories: Decoration, Sound, Lighting, Food,",
             "Security, Visarjan, Miscellaneous (common variations like 'decor' or 'bhog' are",
-            "mapped automatically and reported as warnings).",
+            "mapped automatically and reported as warnings) or an active custom category configured in Settings.",
             "Payment Status: Paid / Pending (blank defaults to Paid).",
             "Vendor Name, Date (YYYY-MM-DD, blank uses the current date), Festival Year",
             "(4-digit year such as 2026, blank uses the active festival year) and Note are optional."
@@ -255,18 +256,29 @@ const normalizeDonorType = (value) => {
     return null;
 };
 
-const normalizeCategory = (value) => {
+const normalizeCategory = (value, customCategories = []) => {
     const s = String(value === undefined || value === null || value === "" ? "" : value).trim().toLowerCase();
     if (!s) return null;
     const exact = EXPENSE_CATEGORIES.find((c) => c.toLowerCase() === s);
-    if (exact) return { value: exact, normalized: false };
-    if (s.startsWith("deco")) return { value: "Decoration", normalized: true };
-    if (s.startsWith("sound") || s.includes("speaker") || s.includes("dj")) return { value: "Sound", normalized: true };
-    if (s.startsWith("light")) return { value: "Lighting", normalized: true };
-    if (s.startsWith("food") || s === "bhog" || s.includes("prasad")) return { value: "Food", normalized: true };
-    if (s.startsWith("security")) return { value: "Security", normalized: true };
-    if (s.startsWith("visarjan") || s.includes("visor") || s.includes("immersion")) return { value: "Visarjan", normalized: true };
-    if (s.startsWith("misc") || s === "other" || s === "others" || s.includes("general")) return { value: "Miscellaneous", normalized: true };
+    if (exact) return { value: exact, normalized: false, categoryId: null };
+    if (s.startsWith("deco")) return { value: "Decoration", normalized: true, categoryId: null };
+    if (s.startsWith("sound") || s.includes("speaker") || s.includes("dj")) return { value: "Sound", normalized: true, categoryId: null };
+    if (s.startsWith("light")) return { value: "Lighting", normalized: true, categoryId: null };
+    if (s.startsWith("food") || s === "bhog" || s.includes("prasad")) return { value: "Food", normalized: true, categoryId: null };
+    if (s.startsWith("security")) return { value: "Security", normalized: true, categoryId: null };
+    if (s.startsWith("visarjan") || s.includes("visor") || s.includes("immersion")) return { value: "Visarjan", normalized: true, categoryId: null };
+    if (s.startsWith("misc") || s === "other" || s === "others" || s.includes("general")) return { value: "Miscellaneous", normalized: true, categoryId: null };
+
+    if (Array.isArray(customCategories) && customCategories.length > 0) {
+        const customMatch = customCategories.find((c) => {
+            const cNorm = c.normalizedName || c.name.toLowerCase();
+            return cNorm === s || c.name.toLowerCase() === s;
+        });
+        if (customMatch) {
+            return { value: customMatch.name, normalized: false, categoryId: customMatch._id };
+        }
+    }
+
     return null;
 };
 
@@ -762,7 +774,11 @@ async function validateExpenses(columns, rawRows, userId) {
     const warnings = [];
     const rows = [];
 
-    const activeYear = await activeFestivalYearFor(userId);
+    const [activeYear, customCategories] = await Promise.all([
+        activeFestivalYearFor(userId),
+        Category.find({ createdBy: userId, isActive: true }).lean()
+    ]);
+
     if (!activeYear) {
         for (let i = 0; i < rawRows.length; i++) {
             rows.push({ row: i + 2, status: "invalid", field: "festivalYear", message: "No active festival year found. Create a year first in Settings." });
@@ -775,7 +791,7 @@ async function validateExpenses(columns, rawRows, userId) {
         const row = i + 2;
         const title = cellText(cells, columns.title);
         const amount = cellNumber(cells, columns.amount);
-        const categoryResult = normalizeCategory(cellText(cells, columns.category));
+        const categoryResult = normalizeCategory(cellText(cells, columns.category), customCategories);
         const vendorName = cellText(cells, columns.vendorName);
         const paymentStatus = normalizePaymentStatus(cellText(cells, columns.paymentStatus));
         const requestedDate = parseDate(cells[columns.date]);
@@ -795,7 +811,7 @@ async function validateExpenses(columns, rawRows, userId) {
             continue;
         }
         if (!categoryResult) {
-            rows.push({ row, status: "invalid", field: "category", message: `Category must be one of: ${EXPENSE_CATEGORIES.join(", ")}` });
+            rows.push({ row, status: "invalid", field: "category", message: `Category must be one of: ${EXPENSE_CATEGORIES.join(", ")} or an active custom category` });
             continue;
         }
         if (!paymentStatus) {
@@ -814,6 +830,7 @@ async function validateExpenses(columns, rawRows, userId) {
                 title,
                 amount,
                 category: categoryResult.value,
+                categoryId: categoryResult.categoryId || null,
                 vendorName: vendorName || "",
                 paymentStatus,
                 date: requestedDate || new Date(),
@@ -1031,15 +1048,18 @@ async function confirmDonations(rows, userId) {
 
 async function confirmExpenses(rows, userId) {
     const results = [];
+    const customCategories = await Category.find({ createdBy: userId, isActive: true }).lean();
+
     for (const r of rows) {
         try {
             if (!/^\d{4}$/.test(String(r.festivalYear))) throw new Error("Festival Year must be a 4-digit year (e.g. 2026)");
-            const category = normalizeCategory(r.category);
+            const category = normalizeCategory(r.category, customCategories);
             if (!category) throw new Error(`Invalid category: ${r.category}`);
             await Expense.create({
                 title: String(r.title || ""),
                 amount: Number(r.amount),
                 category: category.value,
+                categoryId: category.categoryId || null,
                 vendorName: r.vendorName || "",
                 paymentStatus: normalizePaymentStatus(r.paymentStatus) || "paid",
                 note: r.note || "",
