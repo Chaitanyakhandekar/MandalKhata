@@ -1,5 +1,37 @@
 import mongoose from "mongoose";
 
+const paymentSubSchema = new mongoose.Schema({
+    amount: {
+        type: Number,
+        required: true,
+        min: 0
+    },
+    paymentMethod: {
+        type: String,
+        enum: ["cash", "upi", "bank"],
+        default: "cash",
+        required: true
+    },
+    date: {
+        type: Date,
+        default: Date.now,
+        required: true
+    },
+    note: {
+        type: String,
+        trim: true,
+        default: ""
+    },
+    paidBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
+});
+
 const expenseSchema = new mongoose.Schema({
     title: {
         type: String,
@@ -9,6 +41,11 @@ const expenseSchema = new mongoose.Schema({
     amount: {
         type: Number,
         required: true,
+        min: 0
+    },
+    paidAmount: {
+        type: Number,
+        default: 0,
         min: 0
     },
     category: {
@@ -28,9 +65,13 @@ const expenseSchema = new mongoose.Schema({
     },
     paymentStatus: {
         type: String,
-        enum: ["paid", "pending"],
+        enum: ["paid", "partially_paid", "pending"],
         default: "paid",
         required: true
+    },
+    payments: {
+        type: [paymentSubSchema],
+        default: []
     },
     billImage: {
         type: String, // Cloudinary URL

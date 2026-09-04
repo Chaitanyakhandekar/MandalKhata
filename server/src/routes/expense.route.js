@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
     getExpenses,
     createExpense,
+    addPaymentToExpense,
     updateExpense,
     deleteExpense
 } from "../controllers/expense.controller.js";
@@ -20,5 +21,8 @@ router.route("/")
 router.route("/:id")
     .put(upload.single("billImage"), updateExpense)
     .delete(deleteExpense);
+
+router.route("/:id/payments")
+    .post(addPaymentToExpense);
 
 export default router;
