@@ -47,5 +47,17 @@ export const expenseApi = {
                 message: error.response?.data?.message || "Failed to delete expense"
             };
         }
+    },
+
+    addPayment: async (id, paymentData) => {
+        try {
+            const response = await api.post(`/api/expenses/${id}/payments`, paymentData);
+            return response.data;
+        } catch (error) {
+            return {
+                success: false,
+                message: error.response?.data?.message || "Failed to record payment"
+            };
+        }
     }
 };

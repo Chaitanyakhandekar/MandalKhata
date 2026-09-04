@@ -180,9 +180,11 @@ const Reports = () => {
                 const res = await expenseApi.getExpenses({ festivalYear: selectedYear, limit: 1000 });
                 if (res?.success && res?.data?.expenses) {
                     fileName = `MandalKhata_Expenses_${selectedYear}.csv`;
-                    csvContent += "Title,Amount,Category,Vendor Name,Payment Status,Date,Note\n";
+                    csvContent += "Title,Total Amount,Paid Amount,Outstanding,Category,Vendor Name,Payment Status,Date,Note\n";
                     res.data.expenses.forEach((exp) => {
-                        csvContent += `"${(exp.title || "").replace(/"/g, '""')}",${exp.amount},"${exp.category}","${(exp.vendorName || "").replace(/"/g, '""')}","${exp.paymentStatus}","${formatDate(exp.date)}","${(exp.note || "").replace(/"/g, '""')}"\n`;
+                        const paid = exp.paidAmount != null ? exp.paidAmount : (exp.paymentStatus === "paid" ? exp.amount : 0);
+                        const due = Math.max(exp.amount - paid, 0);
+                        csvContent += `"${(exp.title || "").replace(/"/g, '""')}",${exp.amount},${paid},${due},"${exp.category}","${(exp.vendorName || "").replace(/"/g, '""')}","${exp.paymentStatus}","${formatDate(exp.date)}","${(exp.note || "").replace(/"/g, '""')}"\n`;
                     });
                 }
             } else {

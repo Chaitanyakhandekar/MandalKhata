@@ -202,6 +202,51 @@ const getLedger = asyncHandler(async (req, res) => {
     const expenses = await Expense.find(yearMatch).lean();
 
     // Map and combine
+    const expenseTransactions = [];
+    expenses.forEach(e => {
+        if (Array.isArray(e.payments) && e.payments.length > 0) {
+            e.payments.forEach((p, idx) => {
+                if (p.amount > 0) {
+                    const payRef = p._id
+                        ? `EXP-${p._id.toString().slice(-6).toUpperCase()}`
+                        : `EXP-${String(e._id).slice(-6).toUpperCase()}-${idx + 1}`;
+                    expenseTransactions.push({
+                        _id: p._id || `${e._id}_pay_${idx}`,
+                        expenseId: e._id,
+                        title: e.title,
+                        amount: p.amount,
+                        type: "expense",
+                        category: e.category,
+                        vendorName: e.vendorName,
+                        paymentMethod: p.paymentMethod || "cash",
+                        paymentStatus: e.paymentStatus,
+                        date: p.date || e.date,
+                        note: p.note || e.note,
+                        billImage: e.billImage,
+                        referenceNumber: payRef
+                    });
+                }
+            });
+        } else if (e.paymentStatus === "paid" && e.amount > 0) {
+            // Backward compatibility for legacy expenses without a payments array
+            expenseTransactions.push({
+                _id: e._id,
+                expenseId: e._id,
+                title: e.title,
+                amount: e.amount,
+                type: "expense",
+                category: e.category,
+                vendorName: e.vendorName,
+                paymentMethod: "cash",
+                paymentStatus: e.paymentStatus,
+                date: e.date,
+                note: e.note,
+                billImage: e.billImage,
+                referenceNumber: `EXP-${String(e._id).slice(-6).toUpperCase()}`
+            });
+        }
+    });
+
     const mergedTransactions = [
         ...donations.map(d => ({
             _id: d._id,
@@ -216,19 +261,7 @@ const getLedger = asyncHandler(async (req, res) => {
             note: d.note,
             referenceNumber: d.receiptNumber
         })),
-        ...expenses.map(e => ({
-            _id: e._id,
-            title: e.title,
-            amount: e.amount,
-            type: "expense",
-            category: e.category,
-            vendorName: e.vendorName,
-            paymentStatus: e.paymentStatus,
-            date: e.date,
-            note: e.note,
-            billImage: e.billImage,
-            referenceNumber: "BILL-EXP"
-        }))
+        ...expenseTransactions
     ];
 
     // Sort by date ascending to calculate running balance

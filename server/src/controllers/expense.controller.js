@@ -37,7 +37,7 @@ const getExpenses = asyncHandler(async (req, res) => {
     }
 
     // Payment status filter
-    if (paymentStatus && ["paid", "pending"].includes(paymentStatus)) {
+    if (paymentStatus && ["paid", "partially_paid", "pending"].includes(paymentStatus)) {
         query.paymentStatus = paymentStatus;
     }
 
@@ -58,7 +58,7 @@ const getExpenses = asyncHandler(async (req, res) => {
     const limitNum = Math.min(Math.max(parseInt(limit) || 50, 1), 100);
     const skipIndex = (pageNum - 1) * limitNum;
 
-    const [expenses, total, amountAggregate] = await Promise.all([
+    const [expenses, total, statsAggregate] = await Promise.all([
         Expense.find(query)
             .sort({ date: -1, createdAt: -1 })
             .skip(skipIndex)
@@ -67,23 +67,51 @@ const getExpenses = asyncHandler(async (req, res) => {
         Expense.countDocuments(query),
         Expense.aggregate([
             { $match: query },
-            { $group: { _id: null, totalAmount: { $sum: "$amount" } } }
+            {
+                $group: {
+                    _id: null,
+                    totalAmount: { $sum: "$amount" },
+                    totalPaidAmount: { $sum: "$paidAmount" },
+                    totalOutstanding: {
+                        $sum: {
+                            $max: [{ $subtract: ["$amount", "$paidAmount"] }, 0]
+                        }
+                    }
+                }
+            }
         ])
     ]);
 
-    const totalAmount = amountAggregate && amountAggregate[0]?.totalAmount != null ? amountAggregate[0].totalAmount : 0;
+    const stats = statsAggregate && statsAggregate[0] ? statsAggregate[0] : {};
+    const totalAmount = stats.totalAmount || 0;
+    const totalPaidAmount = stats.totalPaidAmount || 0;
+    const totalOutstanding = stats.totalOutstanding || 0;
 
     return res.status(200).json(new ApiResponse(200, {
         expenses,
         total,
         totalAmount,
+        totalPaidAmount,
+        totalOutstanding,
         page: pageNum,
         pages: Math.ceil(total / limitNum)
     }, "Expenses fetched successfully"));
 });
 
 const createExpense = asyncHandler(async (req, res) => {
-    const { title, amount, category, vendorName, paymentStatus, note, date, festivalYear } = req.body;
+    const {
+        title,
+        amount,
+        category,
+        vendorName,
+        paymentType, // "full" or "partial"
+        paymentStatus, // "paid", "partially_paid", "pending"
+        amountPaid,
+        paymentMethod,
+        note,
+        date,
+        festivalYear
+    } = req.body;
 
     if (!title || !title.trim()) {
         return res.status(400).json(new ApiResponse(400, null, "Expense title is required", false));
@@ -92,6 +120,8 @@ const createExpense = asyncHandler(async (req, res) => {
     if (amount === undefined || amount === null || Number(amount) < 0) {
         return res.status(400).json(new ApiResponse(400, null, "Valid expense amount is required", false));
     }
+
+    const totalExpenseAmount = Number(amount);
 
     if (!category || typeof category !== "string" || !category.trim()) {
         return res.status(400).json(new ApiResponse(400, null, "Valid category is required", false));
@@ -144,6 +174,56 @@ const createExpense = asyncHandler(async (req, res) => {
         targetYear = activeYear.year;
     }
 
+    // Determine payment configuration
+    const isPartial = paymentType === "partial" || paymentStatus === "partially_paid";
+    const isPending = paymentStatus === "pending";
+    const validMethod = ["cash", "upi", "bank"].includes(paymentMethod) ? paymentMethod : "cash";
+    const expenseDate = date ? new Date(date) : new Date();
+
+    let finalPaidAmount = 0;
+    let finalPaymentStatus = "paid";
+    const initialPayments = [];
+
+    if (isPending) {
+        finalPaidAmount = 0;
+        finalPaymentStatus = "pending";
+    } else if (isPartial) {
+        if (amountPaid === undefined || amountPaid === null || amountPaid === "" || isNaN(Number(amountPaid))) {
+            return res.status(400).json(new ApiResponse(400, null, "Amount paid is required for partial payment", false));
+        }
+        const paidNum = Number(amountPaid);
+        if (paidNum <= 0) {
+            return res.status(400).json(new ApiResponse(400, null, "Amount paid must be greater than 0", false));
+        }
+        if (paidNum >= totalExpenseAmount) {
+            return res.status(400).json(new ApiResponse(400, null, "Amount paid must be strictly less than total expense amount for partial payment", false));
+        }
+        finalPaidAmount = paidNum;
+        finalPaymentStatus = "partially_paid";
+        initialPayments.push({
+            amount: finalPaidAmount,
+            paymentMethod: validMethod,
+            date: expenseDate,
+            note: note ? note.trim() : "",
+            paidBy: req.user._id,
+            createdAt: new Date()
+        });
+    } else {
+        // Full Payment (default)
+        finalPaidAmount = totalExpenseAmount;
+        finalPaymentStatus = "paid";
+        if (totalExpenseAmount > 0) {
+            initialPayments.push({
+                amount: finalPaidAmount,
+                paymentMethod: validMethod,
+                date: expenseDate,
+                note: note ? note.trim() : "",
+                paidBy: req.user._id,
+                createdAt: new Date()
+            });
+        }
+    }
+
     let billImage = "";
     let billImagePublicId = "";
 
@@ -159,15 +239,17 @@ const createExpense = asyncHandler(async (req, res) => {
 
     const expense = await Expense.create({
         title: title.trim(),
-        amount: Number(amount),
+        amount: totalExpenseAmount,
+        paidAmount: finalPaidAmount,
         category: resolvedCategoryName,
         categoryId: resolvedCategoryId,
         vendorName: vendorName ? vendorName.trim() : "",
-        paymentStatus: paymentStatus || "paid",
+        paymentStatus: finalPaymentStatus,
+        payments: initialPayments,
         billImage,
         billImagePublicId,
         note: note ? note.trim() : "",
-        date: date ? new Date(date) : new Date(),
+        date: expenseDate,
         festivalYear: targetYear,
         createdBy: req.user._id
     });
@@ -175,6 +257,66 @@ const createExpense = asyncHandler(async (req, res) => {
     const populatedExpense = await Expense.findById(expense._id).populate("createdBy", "name username");
 
     return res.status(201).json(new ApiResponse(201, populatedExpense, "Expense recorded successfully"));
+});
+
+const addPaymentToExpense = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { amount, paymentMethod, date, note } = req.body;
+
+    const expense = await Expense.findById(id);
+    if (!expense) {
+        return res.status(404).json(new ApiResponse(404, null, "Expense not found", false));
+    }
+
+    if (expense.createdBy.toString() !== req.user._id.toString()) {
+        return res.status(403).json(new ApiResponse(403, null, "You can only add payments to your own expenses", false));
+    }
+
+    if (amount === undefined || amount === null || isNaN(Number(amount)) || Number(amount) <= 0) {
+        return res.status(400).json(new ApiResponse(400, null, "Payment amount must be greater than 0", false));
+    }
+
+    const paymentNum = Number(amount);
+    const currentPaid = expense.paidAmount || 0;
+    const outstanding = Math.max(expense.amount - currentPaid, 0);
+
+    if (outstanding <= 0) {
+        return res.status(400).json(new ApiResponse(400, null, "This expense is already fully paid", false));
+    }
+
+    if (paymentNum > outstanding) {
+        return res.status(400).json(new ApiResponse(400, null, `Payment amount cannot exceed outstanding balance of ₹${outstanding.toLocaleString("en-IN")}`, false));
+    }
+
+    const validPaymentMethod = ["cash", "upi", "bank"].includes(paymentMethod) ? paymentMethod : "cash";
+    const paymentDate = date ? new Date(date) : new Date();
+
+    const newPayment = {
+        amount: paymentNum,
+        paymentMethod: validPaymentMethod,
+        date: paymentDate,
+        note: note ? note.trim() : "",
+        paidBy: req.user._id,
+        createdAt: new Date()
+    };
+
+    expense.payments.push(newPayment);
+    expense.paidAmount = currentPaid + paymentNum;
+
+    if (expense.paidAmount >= expense.amount) {
+        expense.paymentStatus = "paid";
+    } else if (expense.paidAmount > 0) {
+        expense.paymentStatus = "partially_paid";
+    } else {
+        expense.paymentStatus = "pending";
+    }
+
+    await expense.save();
+
+    const updatedExpense = await Expense.findById(expense._id)
+        .populate("createdBy", "name username");
+
+    return res.status(200).json(new ApiResponse(200, updatedExpense, "Payment recorded successfully"));
 });
 
 const updateExpense = asyncHandler(async (req, res) => {
@@ -192,12 +334,32 @@ const updateExpense = asyncHandler(async (req, res) => {
 
     const updateData = {};
     if (title !== undefined) updateData.title = title.trim();
+
     if (amount !== undefined) {
-        if (Number(amount) < 0) {
+        const newAmount = Number(amount);
+        if (isNaN(newAmount) || newAmount < 0) {
             return res.status(400).json(new ApiResponse(400, null, "Amount cannot be negative", false));
         }
-        updateData.amount = Number(amount);
+
+        const currentPaid = expense.paidAmount || 0;
+        if (newAmount < currentPaid) {
+            return res.status(400).json(new ApiResponse(400, null, `Total expense amount (₹${newAmount.toLocaleString("en-IN")}) cannot be less than already paid amount (₹${currentPaid.toLocaleString("en-IN")})`, false));
+        }
+
+        updateData.amount = newAmount;
+
+        // Auto-recalculate status when total expense amount changes
+        if (currentPaid >= newAmount) {
+            updateData.paymentStatus = "paid";
+        } else if (currentPaid > 0) {
+            updateData.paymentStatus = "partially_paid";
+        } else {
+            updateData.paymentStatus = "pending";
+        }
+    } else if (paymentStatus !== undefined && ["paid", "partially_paid", "pending"].includes(paymentStatus)) {
+        updateData.paymentStatus = paymentStatus;
     }
+
     if (category !== undefined) {
         if (typeof category !== "string" || !category.trim()) {
             return res.status(400).json(new ApiResponse(400, null, "Invalid category", false));
@@ -234,7 +396,6 @@ const updateExpense = asyncHandler(async (req, res) => {
         }
     }
     if (vendorName !== undefined) updateData.vendorName = vendorName.trim();
-    if (paymentStatus !== undefined) updateData.paymentStatus = paymentStatus;
     if (note !== undefined) updateData.note = note.trim();
     if (date !== undefined) updateData.date = new Date(date);
 
@@ -288,6 +449,7 @@ const deleteExpense = asyncHandler(async (req, res) => {
 export {
     getExpenses,
     createExpense,
+    addPaymentToExpense,
     updateExpense,
     deleteExpense
 };
