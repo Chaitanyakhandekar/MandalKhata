@@ -169,11 +169,22 @@ const Reports = () => {
                 const res = await donationApi.getDonations({ festivalYear: selectedYear, limit: 1000 });
                 if (res?.success && res?.data?.donations) {
                     fileName = `MandalKhata_Donations_${selectedYear}.csv`;
-                    csvContent += "Receipt Number,Donor Name,Donor Type,Flat,Amount,Payment Method,Phone,Date,Note\n";
+                    csvContent += "Receipt Number,Donor Name,Donor Type,Flat,Pledged Amount,Collected Amount,Pending Amount,Status,Cash Collected,UPI Collected,Bank Collected,Payment Methods,Phone,Date,Note\n";
                     res.data.donations.forEach((don) => {
                         const typeLabel = don.donorType === "resident" ? "RESIDENT" : don.donorType === "external" ? "EXTERNAL" : "REGULAR";
                         const flatInfo = don.household ? `B${don.household.building} Wing ${don.household.wing} Flat ${don.household.flatNumber}` : "";
-                        csvContent += `"${don.receiptNumber}","${(don.donorName || "").replace(/"/g, '""')}","${typeLabel}","${flatInfo}",${don.amount},"${don.paymentMethod}","${don.phone || ""}","${formatDate(don.date)}","${(don.note || "").replace(/"/g, '""')}"\n`;
+                        const pledged = don.amount || 0;
+                        const collected = don.collectedAmount !== undefined ? don.collectedAmount : pledged;
+                        const pending = don.pendingAmount !== undefined ? don.pendingAmount : Math.max(0, pledged - collected);
+                        const cash = don.cashCollected || 0;
+                        const upi = don.upiCollected || 0;
+                        const bank = don.bankCollected || 0;
+                        const status = (don.collectionStatus || "collected").replace("_", " ").toUpperCase();
+                        const methods = (don.payments && don.payments.length > 0)
+                            ? don.payments.map((p) => `${(p.paymentMethod || "cash").toUpperCase()}: ${p.amount}`).join("; ")
+                            : (don.paymentMethod || "cash").toUpperCase();
+
+                        csvContent += `"${don.receiptNumber}","${(don.donorName || "").replace(/"/g, '""')}","${typeLabel}","${flatInfo}",${pledged},${collected},${pending},"${status}",${cash},${upi},${bank},"${methods}","${don.phone || ""}","${formatDate(don.date)}","${(don.note || "").replace(/"/g, '""')}"\n`;
                     });
                 }
             } else if (reportType === "expenses") {
@@ -192,9 +203,9 @@ const Reports = () => {
                 const resLedger = await reportApi.getLedger({ festivalYear: selectedYear });
                 if (resLedger?.success && resLedger?.data) {
                     fileName = `MandalKhata_Ledger_${selectedYear}.csv`;
-                    csvContent += "Type,Ref Number/Receipt,Title,Amount,Flow,Payment Method/Category,Date,Running Balance\n";
+                    csvContent += "Type,Ref Number/Receipt,Title,Amount,Flow,Payment Method,Date,Running Balance\n";
                     resLedger.data.forEach((tx) => {
-                        csvContent += `"${tx.type}","${tx.referenceNumber}","${(tx.title || "").replace(/"/g, '""')}",${tx.amount},"${tx.type === "donation" ? "CREDIT" : "DEBIT"}","${tx.category || tx.paymentMethod}","${formatDate(tx.date)}",${tx.runningBalance}\n`;
+                        csvContent += `"${tx.type}","${tx.referenceNumber}","${(tx.title || "").replace(/"/g, '""')}",${tx.amount},"${tx.type === "donation" ? "CREDIT" : "DEBIT"}","${tx.paymentMethod || tx.category || ""}","${formatDate(tx.date)}",${tx.runningBalance}\n`;
                     });
                 }
             }

@@ -79,12 +79,19 @@ const PaymentModal = ({ donation, editingPayment, onClose, onSaved }) => {
     const [note, setNote] = useState(editingPayment ? (editingPayment.note || "") : "");
     const [loading, setLoading] = useState(false);
 
-    const maxAddable = Math.max((donation.amount || 0) - (donation.collectedAmount || 0), 0);
+    const otherPaymentsSum = editingPayment
+        ? (donation.payments || []).filter(p => p._id !== editingPayment._id).reduce((s, p) => s + (Number(p.amount) || 0), 0)
+        : (donation.collectedAmount || 0);
+    const maxAllowed = Math.max((donation.amount || 0) - otherPaymentsSum, 0);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         const amtNum = Number(amount);
         if (!amtNum || amtNum <= 0) { toast.error("Payment amount must be greater than 0"); return; }
+        if (amtNum > maxAllowed) {
+            toast.error(`Payment amount (₹${amtNum.toLocaleString("en-IN")}) cannot exceed remaining amount of ₹${maxAllowed.toLocaleString("en-IN")}`);
+            return;
+        }
         setLoading(true);
         try {
             let res;
@@ -118,22 +125,20 @@ const PaymentModal = ({ donation, editingPayment, onClose, onSaved }) => {
                     </button>
                 </div>
 
-                {!editingPayment && (
-                    <div className="mx-6 mt-4 rounded-xl border border-indigo-100 bg-indigo-50/50 px-4 py-3 dark:border-indigo-900/40 dark:bg-indigo-950/20">
-                        <div className="flex items-center justify-between text-xs">
-                            <span className="text-indigo-700 dark:text-indigo-300">Pledged</span>
-                            <span className="font-bold text-indigo-700 dark:text-indigo-300">{formatCurrency(donation.amount)}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs mt-1">
-                            <span className="text-emerald-700 dark:text-emerald-400">Collected</span>
-                            <span className="font-bold text-emerald-700 dark:text-emerald-400">{formatCurrency(donation.collectedAmount)}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs mt-1">
-                            <span className="text-amber-700 dark:text-amber-400">Remaining</span>
-                            <span className="font-bold text-amber-700 dark:text-amber-400">{formatCurrency(maxAddable)}</span>
-                        </div>
+                <div className="mx-6 mt-4 rounded-xl border border-indigo-100 bg-indigo-50/50 px-4 py-3 dark:border-indigo-900/40 dark:bg-indigo-950/20">
+                    <div className="flex items-center justify-between text-xs">
+                        <span className="text-indigo-700 dark:text-indigo-300">Pledged Amount</span>
+                        <span className="font-bold text-indigo-700 dark:text-indigo-300">{formatCurrency(donation.amount)}</span>
                     </div>
-                )}
+                    <div className="flex items-center justify-between text-xs mt-1">
+                        <span className="text-emerald-700 dark:text-emerald-400">Total Collected</span>
+                        <span className="font-bold text-emerald-700 dark:text-emerald-400">{formatCurrency(donation.collectedAmount)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs mt-1">
+                        <span className="text-amber-700 dark:text-amber-400">Max Addable</span>
+                        <span className="font-bold text-amber-700 dark:text-amber-400">{formatCurrency(maxAllowed)}</span>
+                    </div>
+                </div>
 
                 <form onSubmit={handleSubmit}>
                     <div className="p-6 space-y-4">
@@ -143,6 +148,7 @@ const PaymentModal = ({ donation, editingPayment, onClose, onSaved }) => {
                                 type="number"
                                 min="0.01"
                                 step="0.01"
+                                max={maxAllowed}
                                 value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
                                 placeholder="0"
@@ -226,9 +232,21 @@ const PaymentHistoryPanel = ({ donation, onUpdated }) => {
     const statusBadge = getStatusBadge(donation.collectionStatus);
     const isPaid = donation.collectionStatus === "paid";
 
+    // Dynamic payment breakdown calculation
+    const cashTotal = (donation.payments || [])
+        .filter((p) => p.paymentMethod === "cash")
+        .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+    const upiTotal = (donation.payments || [])
+        .filter((p) => p.paymentMethod === "upi")
+        .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+    const bankTotal = (donation.payments || [])
+        .filter((p) => p.paymentMethod === "bank")
+        .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+
     return (
         <div className="border-t border-indigo-100 bg-indigo-50/30 px-4 py-4 sm:px-6 dark:border-indigo-900/30 dark:bg-indigo-950/10">
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            {/* Header / Summary Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                 <div className="flex flex-wrap items-center gap-2">
                     <span className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-0.5 text-[11px] font-bold ${statusBadge.cls}`}>
                         {statusBadge.icon} {statusBadge.label}
@@ -254,6 +272,47 @@ const PaymentHistoryPanel = ({ donation, onUpdated }) => {
                         Add Payment
                     </button>
                 )}
+            </div>
+
+            {/* Payment Breakdown Card */}
+            <div className="mb-3 rounded-2xl border border-indigo-100/70 bg-white p-3.5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-2.5">
+                    Payment Breakdown
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    <div className="rounded-xl border border-amber-100 bg-amber-50/50 p-2.5 dark:border-amber-900/30 dark:bg-amber-950/20">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">Cash</div>
+                        <div className="mt-0.5 text-sm font-bold text-amber-900 dark:text-amber-200">
+                            {formatCurrency(cashTotal)}
+                        </div>
+                    </div>
+                    <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-2.5 dark:border-emerald-900/30 dark:bg-emerald-950/20">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">UPI</div>
+                        <div className="mt-0.5 text-sm font-bold text-emerald-900 dark:text-emerald-200">
+                            {formatCurrency(upiTotal)}
+                        </div>
+                    </div>
+                    {bankTotal > 0 && (
+                        <div className="rounded-xl border border-sky-100 bg-sky-50/50 p-2.5 dark:border-sky-900/30 dark:bg-sky-950/20">
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-sky-700 dark:text-sky-400">Bank Transfer</div>
+                            <div className="mt-0.5 text-sm font-bold text-sky-900 dark:text-sky-200">
+                                {formatCurrency(bankTotal)}
+                            </div>
+                        </div>
+                    )}
+                    <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-2.5 dark:border-indigo-900/30 dark:bg-indigo-950/20">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400">Total Collected</div>
+                        <div className="mt-0.5 text-sm font-bold text-indigo-900 dark:text-indigo-200">
+                            {formatCurrency(donation.collectedAmount)}
+                        </div>
+                    </div>
+                    <div className="rounded-xl border border-gray-100 bg-gray-50/80 p-2.5 dark:border-gray-800 dark:bg-gray-850">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Pending</div>
+                        <div className="mt-0.5 text-sm font-bold text-gray-800 dark:text-gray-200">
+                            {formatCurrency(donation.pendingAmount)}
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {(donation.payments || []).length === 0 ? (
@@ -318,6 +377,8 @@ const Donations = () => {
     const [totalPledgedAmount, setTotalPledgedAmount] = useState(0);
     const [totalCollectedAmount, setTotalCollectedAmount] = useState(0);
     const [totalPendingAmount, setTotalPendingAmount] = useState(0);
+    const [totalCashCollected, setTotalCashCollected] = useState(0);
+    const [totalUpiCollected, setTotalUpiCollected] = useState(0);
     const [page, setPage] = useState(1);
     const [pages, setPages] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -349,9 +410,11 @@ const Donations = () => {
     const [address, setAddress] = useState("");
     const [formLoading, setFormLoading] = useState(false);
 
-    // Collection mode for new donations
-    const [collectionMode, setCollectionMode] = useState("full"); // "full" | "pledge_only"
-    const [initPaymentMethod, setInitPaymentMethod] = useState("cash");
+    // Collection mode & split payments for new donations
+    const [collectionMode, setCollectionMode] = useState("collect_now"); // "collect_now" | "pledge_only"
+    const [splitPayments, setSplitPayments] = useState([
+        { amount: "", paymentMethod: "cash", note: "" }
+    ]);
 
     // Household Selector State
     const [selectedHousehold, setSelectedHousehold] = useState(null);
@@ -423,6 +486,8 @@ const Donations = () => {
                 setTotalPledgedAmount(response.data.totalPledgedAmount || 0);
                 setTotalCollectedAmount(response.data.totalCollectedAmount || 0);
                 setTotalPendingAmount(response.data.totalPendingAmount || 0);
+                setTotalCashCollected(response.data.totalCashCollected || 0);
+                setTotalUpiCollected(response.data.totalUpiCollected || 0);
                 setPages(response.data.pages);
             } else {
                 toast.error(response.message || "Failed to load donations");
@@ -475,8 +540,32 @@ const Donations = () => {
         setManualMemberCount(1);
         setConflictHousehold(null);
         setConflictMessage("");
-        setCollectionMode("full");
-        setInitPaymentMethod("cash");
+        setCollectionMode("collect_now");
+        setSplitPayments([{ amount: "", paymentMethod: "cash", note: "" }]);
+    };
+
+    // Helper to add split payment row
+    const handleAddSplitRow = () => {
+        const pledged = Number(formData.amount) || 0;
+        const currentSum = splitPayments.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+        const remaining = Math.max(pledged - currentSum, 0);
+        const nextMethod = splitPayments.length % 2 === 1 ? "upi" : "cash";
+        setSplitPayments((prev) => [
+            ...prev,
+            { amount: remaining > 0 ? remaining : "", paymentMethod: nextMethod, note: "" }
+        ]);
+    };
+
+    const handleRemoveSplitRow = (index) => {
+        setSplitPayments((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const handleSplitRowChange = (index, field, value) => {
+        setSplitPayments((prev) => {
+            const updated = [...prev];
+            updated[index] = { ...updated[index], [field]: value };
+            return updated;
+        });
     };
 
     const loadBuildingConfigs = async () => {
@@ -546,7 +635,17 @@ const Donations = () => {
     // Handle form input changes
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+        setFormData((prev) => {
+            if (name === "amount" && !editingId) {
+                setSplitPayments((currentSplits) => {
+                    if (currentSplits.length === 1 && (currentSplits[0].amount === "" || String(currentSplits[0].amount) === String(prev.amount))) {
+                        return [{ ...currentSplits[0], amount: value }];
+                    }
+                    return currentSplits;
+                });
+            }
+            return { ...prev, [name]: value };
+        });
     };
 
     // ---- Household Search ----
@@ -722,22 +821,28 @@ const Donations = () => {
             // Build initialPayments (only for create)
             let initialPayments;
             if (!editingId) {
-                if (collectionMode === "full") {
-                    initialPayments = [{
-                        amount: Number(formData.amount),
-                        paymentMethod: initPaymentMethod,
-                        date: formData.date,
-                        note: formData.note || ""
-                    }];
-                } else {
+                if (collectionMode === "pledge_only") {
                     initialPayments = [];
+                } else {
+                    const validRows = splitPayments.filter(r => Number(r.amount) > 0);
+                    const sumRows = validRows.reduce((s, r) => s + Number(r.amount), 0);
+                    if (sumRows > Number(formData.amount)) {
+                        toast.error(`Total initial payments (₹${sumRows.toLocaleString("en-IN")}) cannot exceed the pledged amount of ₹${Number(formData.amount).toLocaleString("en-IN")}`);
+                        setFormLoading(false);
+                        return;
+                    }
+                    initialPayments = validRows.map(r => ({
+                        amount: Number(r.amount),
+                        paymentMethod: r.paymentMethod || "cash",
+                        date: formData.date,
+                        note: r.note ? r.note.trim() : ""
+                    }));
                 }
             }
 
             const payload = {
                 ...formData,
                 amount: Number(formData.amount),
-                paymentMethod: initPaymentMethod,
                 donorType
             };
 
@@ -862,7 +967,7 @@ const Donations = () => {
             </div>
 
             {/* ── Financial Overview Cards ────────────────────────── */}
-            <div className="mb-4 sm:mb-6 grid grid-cols-3 gap-2 sm:gap-4">
+            <div className="mb-4 sm:mb-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4">
                 <div className="rounded-xl sm:rounded-2xl border border-gray-100 bg-white p-3 sm:p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
                     <div className="flex items-center justify-between mb-2 sm:mb-3">
                         <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-400">Pledged</span>
@@ -902,6 +1007,32 @@ const Donations = () => {
                         {formatCurrency(totalPendingAmount)}
                     </div>
                     <p className="text-[10px] sm:text-xs text-amber-600/60 dark:text-amber-500/50 mt-0.5">yet to collect</p>
+                </div>
+
+                <div className="rounded-xl sm:rounded-2xl border border-gray-100 bg-white p-3 sm:p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                    <div className="flex items-center justify-between mb-2 sm:mb-3">
+                        <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">Cash Collected</span>
+                        <div className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-950/30">
+                            <Coins className="h-3 w-3 sm:h-4 sm:w-4 text-amber-600 dark:text-amber-400" />
+                        </div>
+                    </div>
+                    <div className="text-sm sm:text-xl font-bold text-amber-800 dark:text-amber-300 leading-tight">
+                        {formatCurrency(totalCashCollected)}
+                    </div>
+                    <p className="text-[10px] sm:text-xs text-amber-600/60 dark:text-amber-500/50 mt-0.5">in cash</p>
+                </div>
+
+                <div className="col-span-2 sm:col-span-1 rounded-xl sm:rounded-2xl border border-gray-100 bg-white p-3 sm:p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                    <div className="flex items-center justify-between mb-2 sm:mb-3">
+                        <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">UPI Collected</span>
+                        <div className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/30">
+                            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                    </div>
+                    <div className="text-sm sm:text-xl font-bold text-emerald-800 dark:text-emerald-300 leading-tight">
+                        {formatCurrency(totalUpiCollected)}
+                    </div>
+                    <p className="text-[10px] sm:text-xs text-emerald-600/60 dark:text-emerald-500/50 mt-0.5">through UPI</p>
                 </div>
             </div>
 
@@ -1491,25 +1622,203 @@ const Donations = () => {
                                 {/* ── Collection Mode (new donations only) ── */}
                                 {!editingId && (
                                     <div className="border-t border-gray-100 pt-4 dark:border-gray-800">
-                                        <label className="text-xs font-bold uppercase tracking-wider text-gray-400">Collection</label>
+                                        <label className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                                            Collection Mode *
+                                        </label>
                                         <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                            <button type="button" onClick={() => setCollectionMode("full")} className={`flex items-center justify-center gap-2 rounded-xl border py-3 text-xs font-bold transition-all ${collectionMode === "full" ? "border-emerald-600 bg-emerald-50/50 text-emerald-700 dark:border-emerald-500 dark:bg-emerald-950/20" : "border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-800"}`}>
-                                                <CheckCircle2 className="h-4 w-4" /> Collected in Full Now
+                                            <button
+                                                type="button"
+                                                onClick={() => setCollectionMode("collect_now")}
+                                                className={`flex items-center justify-center gap-2 rounded-xl border py-3 text-xs font-bold transition-all ${
+                                                    collectionMode === "collect_now"
+                                                        ? "border-emerald-600 bg-emerald-50/50 text-emerald-700 dark:border-emerald-500 dark:bg-emerald-950/20"
+                                                        : "border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-800"
+                                                }`}
+                                            >
+                                                <CheckCircle2 className="h-4 w-4" /> Collect Now / Split Payments
                                             </button>
-                                            <button type="button" onClick={() => setCollectionMode("pledge_only")} className={`flex items-center justify-center gap-2 rounded-xl border py-3 text-xs font-bold transition-all ${collectionMode === "pledge_only" ? "border-amber-600 bg-amber-50/50 text-amber-700 dark:border-amber-500 dark:bg-amber-950/20" : "border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-800"}`}>
+                                            <button
+                                                type="button"
+                                                onClick={() => setCollectionMode("pledge_only")}
+                                                className={`flex items-center justify-center gap-2 rounded-xl border py-3 text-xs font-bold transition-all ${
+                                                    collectionMode === "pledge_only"
+                                                        ? "border-amber-600 bg-amber-50/50 text-amber-700 dark:border-amber-500 dark:bg-amber-950/20"
+                                                        : "border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-800"
+                                                }`}
+                                            >
                                                 <Clock className="h-4 w-4" /> Pledge Only (Collect Later)
                                             </button>
                                         </div>
 
-                                        {collectionMode === "full" && (
-                                            <div className="mt-3">
-                                                <label className="text-xs font-bold uppercase tracking-wider text-gray-400">Payment Method *</label>
-                                                <div className="mt-2 grid grid-cols-3 gap-2">
-                                                    {["cash", "upi", "bank"].map((m) => (
-                                                        <button key={m} type="button" onClick={() => setInitPaymentMethod(m)} className={`rounded-xl border py-2.5 text-xs font-bold transition-all ${initPaymentMethod === m ? "border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20" : "border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-800"}`}>
-                                                            {m === "bank" ? "Bank" : m.toUpperCase()}
-                                                        </button>
+                                        {collectionMode === "collect_now" && (
+                                            <div className="mt-4 space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                                                        Payment Rows (Split by Method)
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleAddSplitRow}
+                                                        className="flex items-center gap-1 rounded-lg bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-400"
+                                                    >
+                                                        <Plus className="h-3.5 w-3.5" /> Add Split Row
+                                                    </button>
+                                                </div>
+
+                                                {/* Stacked payment rows */}
+                                                <div className="space-y-3">
+                                                    {splitPayments.map((row, idx) => (
+                                                        <div
+                                                            key={idx}
+                                                            className="rounded-2xl border border-gray-200 bg-gray-50/60 p-3.5 dark:border-gray-800 dark:bg-gray-950/50 space-y-2.5"
+                                                        >
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                                                                    Payment {idx + 1}
+                                                                </span>
+                                                                {splitPayments.length > 1 && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleRemoveSplitRow(idx)}
+                                                                        className="flex items-center gap-1 text-[11px] font-semibold text-rose-600 hover:text-rose-700"
+                                                                    >
+                                                                        <Trash2 className="h-3.5 w-3.5" /> Remove
+                                                                    </button>
+                                                                )}
+                                                            </div>
+
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                                                <div>
+                                                                    <label className="text-[11px] font-semibold text-gray-500">
+                                                                        Amount (₹) *
+                                                                    </label>
+                                                                    <input
+                                                                        type="number"
+                                                                        min="0.01"
+                                                                        step="0.01"
+                                                                        value={row.amount}
+                                                                        onChange={(e) =>
+                                                                            handleSplitRowChange(idx, "amount", e.target.value)
+                                                                        }
+                                                                        placeholder="200"
+                                                                        className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm placeholder-gray-400 outline-none transition focus:border-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                                                        required
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="text-[11px] font-semibold text-gray-500">
+                                                                        Method *
+                                                                    </label>
+                                                                    <div className="mt-1 grid grid-cols-3 gap-1.5">
+                                                                        {["cash", "upi", "bank"].map((m) => (
+                                                                            <button
+                                                                                key={m}
+                                                                                type="button"
+                                                                                onClick={() =>
+                                                                                    handleSplitRowChange(idx, "paymentMethod", m)
+                                                                                }
+                                                                                className={`rounded-xl border py-2 text-xs font-bold transition-all ${
+                                                                                    row.paymentMethod === m
+                                                                                        ? "border-indigo-600 bg-indigo-50/50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/20"
+                                                                                        : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900"
+                                                                                }`}
+                                                                            >
+                                                                                {m === "bank" ? "Bank" : m.toUpperCase()}
+                                                                            </button>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div>
+                                                                <input
+                                                                    type="text"
+                                                                    value={row.note || ""}
+                                                                    onChange={(e) =>
+                                                                        handleSplitRowChange(idx, "note", e.target.value)
+                                                                    }
+                                                                    placeholder="Optional reference / note for this payment..."
+                                                                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs placeholder-gray-400 outline-none transition focus:border-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                                                />
+                                                            </div>
+                                                        </div>
                                                     ))}
+                                                </div>
+
+                                                {/* Live Calculation Box */}
+                                                <div className="rounded-2xl border border-indigo-100 bg-indigo-50/40 p-3.5 dark:border-indigo-900/40 dark:bg-indigo-950/20">
+                                                    <div className="text-[11px] font-bold uppercase tracking-wider text-indigo-800 dark:text-indigo-300 mb-2">
+                                                        Live Calculation
+                                                    </div>
+                                                    <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                                                        <div className="rounded-xl bg-white p-2 dark:bg-gray-900">
+                                                            <div className="text-[10px] text-gray-400 font-semibold">Pledged</div>
+                                                            <div className="font-bold text-gray-800 dark:text-white mt-0.5">
+                                                                {formatCurrency(Number(formData.amount) || 0)}
+                                                            </div>
+                                                        </div>
+                                                        <div className="rounded-xl bg-white p-2 dark:bg-gray-900">
+                                                            <div className="text-[10px] text-emerald-600 font-semibold">Collected</div>
+                                                            <div className="font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">
+                                                                {formatCurrency(
+                                                                    splitPayments.reduce((s, r) => s + (Number(r.amount) || 0), 0)
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <div className="rounded-xl bg-white p-2 dark:bg-gray-900">
+                                                            <div className="text-[10px] text-amber-600 font-semibold">Pending</div>
+                                                            <div className="font-bold text-amber-700 dark:text-amber-400 mt-0.5">
+                                                                {formatCurrency(
+                                                                    Math.max(
+                                                                        (Number(formData.amount) || 0) -
+                                                                            splitPayments.reduce((s, r) => s + (Number(r.amount) || 0), 0),
+                                                                        0
+                                                                    )
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Method Breakdown Pills */}
+                                                    <div className="mt-2.5 flex flex-wrap items-center gap-2 text-[11px]">
+                                                        <span className="rounded-lg bg-amber-100/70 px-2 py-0.5 font-bold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                                                            Cash: {formatCurrency(
+                                                                splitPayments
+                                                                    .filter((r) => r.paymentMethod === "cash")
+                                                                    .reduce((s, r) => s + (Number(r.amount) || 0), 0)
+                                                            )}
+                                                        </span>
+                                                        <span className="rounded-lg bg-emerald-100/70 px-2 py-0.5 font-bold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+                                                            UPI: {formatCurrency(
+                                                                splitPayments
+                                                                    .filter((r) => r.paymentMethod === "upi")
+                                                                    .reduce((s, r) => s + (Number(r.amount) || 0), 0)
+                                                            )}
+                                                        </span>
+                                                        {splitPayments.some((r) => r.paymentMethod === "bank") && (
+                                                            <span className="rounded-lg bg-sky-100/70 px-2 py-0.5 font-bold text-sky-800 dark:bg-sky-950/40 dark:text-sky-300">
+                                                                Bank: {formatCurrency(
+                                                                    splitPayments
+                                                                        .filter((r) => r.paymentMethod === "bank")
+                                                                        .reduce((s, r) => s + (Number(r.amount) || 0), 0)
+                                                                )}
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Over-pledged warning */}
+                                                    {splitPayments.reduce((s, r) => s + (Number(r.amount) || 0), 0) >
+                                                        (Number(formData.amount) || 0) && (
+                                                        <div className="mt-2.5 flex items-center gap-1.5 rounded-xl bg-red-50 p-2.5 text-xs font-semibold text-red-700 dark:bg-red-950/30 dark:text-red-400">
+                                                            <AlertTriangle className="h-4 w-4 shrink-0" />
+                                                            Total payments (₹
+                                                            {splitPayments
+                                                                .reduce((s, r) => s + (Number(r.amount) || 0), 0)
+                                                                .toLocaleString("en-IN")}
+                                                            ) cannot exceed pledged amount of ₹
+                                                            {(Number(formData.amount) || 0).toLocaleString("en-IN")}.
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}
@@ -1528,7 +1837,17 @@ const Donations = () => {
                                 <button type="button" onClick={() => setIsOpen(false)} className="w-full rounded-xl border border-gray-200 bg-white py-2.5 px-4 text-xs font-semibold text-gray-500 hover:bg-gray-50 sm:w-auto dark:border-gray-800 dark:bg-gray-900">
                                     Cancel
                                 </button>
-                                <button type="submit" disabled={formLoading} className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-indigo-600 py-2.5 px-4 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 sm:w-auto">
+                                <button
+                                    type="submit"
+                                    disabled={
+                                        formLoading ||
+                                        (!editingId &&
+                                            collectionMode === "collect_now" &&
+                                            splitPayments.reduce((s, r) => s + (Number(r.amount) || 0), 0) >
+                                                (Number(formData.amount) || 0))
+                                    }
+                                    className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-indigo-600 py-2.5 px-4 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 sm:w-auto"
+                                >
                                     {formLoading
                                         ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                                         : (editingId ? "Update Record" : "Create Donation")}

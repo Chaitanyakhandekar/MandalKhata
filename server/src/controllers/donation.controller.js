@@ -13,35 +13,54 @@ const PHONE_REGEX = /^[0-9+\-\s]{7,15}$/;
 
 /**
  * Helper to ensure legacy donation documents without payments array
- * are properly shaped with collectedAmount, pendingAmount, collectionStatus, and payments history.
+ * are properly shaped with collectedAmount, pendingAmount, collectionStatus,
+ * payments history, and per-payment-method breakdowns (Cash, UPI, Bank).
  */
 const normalizeDonationDoc = (doc) => {
     const d = doc && typeof doc.toObject === "function" ? doc.toObject() : { ...doc };
     if (!d) return d;
+
+    let cashCollected = 0;
+    let upiCollected = 0;
+    let bankCollected = 0;
 
     if (!Array.isArray(d.payments) || d.payments.length === 0) {
         // Legacy donation: treated as fully collected if not explicitly marked otherwise
         const amountVal = d.amount || 0;
         d.collectedAmount = d.collectedAmount != null ? d.collectedAmount : amountVal;
         d.pendingAmount = d.pendingAmount != null ? d.pendingAmount : Math.max(amountVal - d.collectedAmount, 0);
-        d.collectionStatus = d.collectionStatus || (d.pendingAmount === 0 ? "paid" : "partially_collected");
+        d.collectionStatus = d.collectionStatus || (d.pendingAmount === 0 ? "paid" : (d.collectedAmount > 0 ? "partially_collected" : "not_collected"));
+        
+        const defaultMethod = (d.paymentMethod || "cash").toLowerCase();
         if (d.collectedAmount > 0) {
             d.payments = [
                 {
                     _id: d._id,
                     amount: d.collectedAmount,
-                    paymentMethod: d.paymentMethod || "cash",
+                    paymentMethod: defaultMethod,
                     date: d.date || d.createdAt,
                     note: d.note || "",
                     createdAt: d.createdAt
                 }
             ];
+            if (defaultMethod === "upi") upiCollected = d.collectedAmount;
+            else if (defaultMethod === "bank") bankCollected = d.collectedAmount;
+            else cashCollected = d.collectedAmount;
         } else {
             d.payments = [];
         }
     } else {
-        // Compute dynamically if needed
-        const totalPaid = d.payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+        // Compute dynamically from individual payments
+        let totalPaid = 0;
+        d.payments.forEach(p => {
+            const pAmt = Number(p.amount) || 0;
+            totalPaid += pAmt;
+            const pMethod = (p.paymentMethod || "cash").toLowerCase();
+            if (pMethod === "upi") upiCollected += pAmt;
+            else if (pMethod === "bank") bankCollected += pAmt;
+            else cashCollected += pAmt;
+        });
+
         d.collectedAmount = totalPaid;
         d.pendingAmount = Math.max((d.amount || 0) - totalPaid, 0);
         if (totalPaid === 0) {
@@ -52,6 +71,16 @@ const normalizeDonationDoc = (doc) => {
             d.collectionStatus = "partially_collected";
         }
     }
+
+    d.cashCollected = cashCollected;
+    d.upiCollected = upiCollected;
+    d.bankCollected = bankCollected;
+    d.paymentMethodTotals = {
+        cash: cashCollected,
+        upi: upiCollected,
+        bank: bankCollected
+    };
+
     return d;
 };
 
@@ -68,68 +97,77 @@ const getDonations = asyncHandler(async (req, res) => {
         limit = 50
     } = req.query;
 
-    const query = { createdBy: req.user._id };
+    const andConditions = [{ createdBy: req.user._id }];
 
     // Filter by festival year (always default to active year if not provided)
     if (festivalYear) {
-        query.festivalYear = festivalYear;
+        andConditions.push({ festivalYear });
     } else {
         const activeYear = await FestivalYear.findOne({ isActive: true, createdBy: req.user._id });
         if (activeYear) {
-            query.festivalYear = activeYear.year;
+            andConditions.push({ festivalYear: activeYear.year });
         }
     }
 
-    // Keyword search (donorName or receiptNumber or phone)
+    // Keyword search (donorName or receiptNumber or phone or note)
     if (search && search.trim()) {
         const regex = new RegExp(search.trim(), "i");
-        query.$or = [
-            { donorName: regex },
-            { receiptNumber: regex },
-            { phone: regex },
-            { note: regex }
-        ];
+        andConditions.push({
+            $or: [
+                { donorName: regex },
+                { receiptNumber: regex },
+                { phone: regex },
+                { note: regex }
+            ]
+        });
     }
 
     // Collection Status filter (all, not_collected, partially_collected, paid)
     if (collectionStatus && ["not_collected", "partially_collected", "paid"].includes(collectionStatus)) {
         if (collectionStatus === "paid") {
             // For backward compatibility: paid matches collectionStatus == 'paid' OR collectionStatus not set
-            query.$or = [
-                { collectionStatus: "paid" },
-                { collectionStatus: { $exists: false } },
-                { collectionStatus: null }
-            ];
+            andConditions.push({
+                $or: [
+                    { collectionStatus: "paid" },
+                    { collectionStatus: { $exists: false } },
+                    { collectionStatus: null }
+                ]
+            });
         } else {
-            query.collectionStatus = collectionStatus;
+            andConditions.push({ collectionStatus });
         }
     }
 
     // Payment method filter (checks across multiple payments or top-level paymentMethod)
     if (paymentMethod && ["cash", "upi", "bank"].includes(paymentMethod)) {
-        query.$or = [
-            { "payments.paymentMethod": paymentMethod },
-            { paymentMethod: paymentMethod }
-        ];
+        andConditions.push({
+            $or: [
+                { "payments.paymentMethod": paymentMethod },
+                { paymentMethod: paymentMethod }
+            ]
+        });
     }
 
     // Donor type filter (resident / external)
     if (donorType && DONOR_TYPES.includes(donorType)) {
-        query.donorType = donorType;
+        andConditions.push({ donorType });
     }
 
     // Date range filter
     if (startDate || endDate) {
-        query.date = {};
+        const dateFilter = {};
         if (startDate) {
-            query.date.$gte = new Date(startDate);
+            dateFilter.$gte = new Date(startDate);
         }
         if (endDate) {
             const end = new Date(endDate);
             end.setHours(23, 59, 59, 999);
-            query.date.$lte = end;
+            dateFilter.$lte = end;
         }
+        andConditions.push({ date: dateFilter });
     }
+
+    const query = andConditions.length > 1 ? { $and: andConditions } : andConditions[0];
 
     const pageNum = Math.max(parseInt(page) || 1, 1);
     const limitNum = Math.min(Math.max(parseInt(limit) || 50, 1), 100);
@@ -147,17 +185,23 @@ const getDonations = asyncHandler(async (req, res) => {
     const total = await Donation.countDocuments(query);
 
     // Dynamic Financial Summary Aggregations
-    const allMatches = await Donation.find(query).select("amount collectedAmount pendingAmount collectionStatus payments").lean();
+    const allMatches = await Donation.find(query).select("amount collectedAmount pendingAmount collectionStatus payments paymentMethod").lean();
 
     let totalPledgedAmount = 0;
     let totalCollectedAmount = 0;
     let totalPendingAmount = 0;
+    let totalCashCollected = 0;
+    let totalUpiCollected = 0;
+    let totalBankCollected = 0;
 
     allMatches.forEach((m) => {
         const norm = normalizeDonationDoc(m);
         totalPledgedAmount += norm.amount || 0;
         totalCollectedAmount += norm.collectedAmount || 0;
         totalPendingAmount += norm.pendingAmount || 0;
+        totalCashCollected += norm.cashCollected || 0;
+        totalUpiCollected += norm.upiCollected || 0;
+        totalBankCollected += norm.bankCollected || 0;
     });
 
     return res.status(200).json(
@@ -170,6 +214,9 @@ const getDonations = asyncHandler(async (req, res) => {
                 totalPledgedAmount,
                 totalCollectedAmount,
                 totalPendingAmount,
+                totalCashCollected,
+                totalUpiCollected,
+                totalBankCollected,
                 page: pageNum,
                 pages: Math.ceil(total / limitNum)
             },
