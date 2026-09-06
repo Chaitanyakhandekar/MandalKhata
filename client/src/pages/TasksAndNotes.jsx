@@ -27,6 +27,7 @@ import {
     Sparkles,
     Calendar,
     Filter,
+    X,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -682,37 +683,44 @@ const TasksAndNotes = () => {
                 </div>
 
                 {/* Search Bar & Contextual Filters */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 rounded-xl sm:rounded-2xl border border-gray-100 bg-white p-3 sm:p-3.5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                     {/* Search Input */}
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <div className="relative flex-1 min-w-0">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
                         <input
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search tasks, grocery items, or notes..."
-                            className="w-full rounded-xl border border-gray-200 bg-gray-50/60 py-2 pl-9 pr-3 text-xs sm:text-sm text-gray-900 outline-none transition-colors focus:border-indigo-500 focus:bg-white dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100"
+                            placeholder={
+                                activeTab === "shopping"
+                                    ? "Search shopping items..."
+                                    : activeTab === "notes"
+                                    ? "Search notes..."
+                                    : "Search tasks, items, notes..."
+                            }
+                            className="w-full rounded-xl border border-gray-200 bg-white py-1.5 sm:py-2 pl-8 pr-7 text-xs sm:text-sm text-gray-900 shadow-sm outline-none transition-colors focus:border-indigo-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
                         />
                         {searchQuery && (
                             <button
+                                type="button"
                                 onClick={() => setSearchQuery("")}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400 hover:text-gray-600"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                             >
-                                Clear
+                                <X className="h-3.5 w-3.5" />
                             </button>
                         )}
                     </div>
 
                     {/* Filter controls based on activeTab */}
                     {(activeTab === "tasks" || activeTab === "all") && (
-                        <div className="flex items-center gap-2 overflow-x-auto pb-0.5">
+                        <div className="flex items-center gap-1.5 shrink-0">
                             {/* Task Status Filter */}
                             <select
                                 value={taskStatusFilter}
                                 onChange={(e) => setTaskStatusFilter(e.target.value)}
-                                className="rounded-xl border border-gray-200 bg-gray-50/60 px-3 py-2 text-xs font-semibold text-gray-700 outline-none focus:border-indigo-500 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300"
+                                className="flex-1 sm:flex-none rounded-xl border border-gray-200 bg-white py-1.5 sm:py-2 px-2.5 text-xs font-medium text-gray-700 shadow-sm outline-none focus:border-indigo-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300"
                             >
-                                <option value="all">All Tasks</option>
+                                <option value="all">All Status</option>
                                 <option value="pending">Pending</option>
                                 <option value="completed">Completed</option>
                             </select>
@@ -721,22 +729,22 @@ const TasksAndNotes = () => {
                             <select
                                 value={taskPriorityFilter}
                                 onChange={(e) => setTaskPriorityFilter(e.target.value)}
-                                className="rounded-xl border border-gray-200 bg-gray-50/60 px-3 py-2 text-xs font-semibold text-gray-700 outline-none focus:border-indigo-500 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300"
+                                className="flex-1 sm:flex-none rounded-xl border border-gray-200 bg-white py-1.5 sm:py-2 px-2.5 text-xs font-medium text-gray-700 shadow-sm outline-none focus:border-indigo-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300"
                             >
-                                <option value="all">All Priorities</option>
-                                <option value="high">High Priority</option>
-                                <option value="medium">Medium Priority</option>
-                                <option value="low">Low Priority</option>
+                                <option value="all">All Priority</option>
+                                <option value="high">High</option>
+                                <option value="medium">Medium</option>
+                                <option value="low">Low</option>
                             </select>
                         </div>
                     )}
 
                     {activeTab === "shopping" && (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 shrink-0">
                             <select
                                 value={shoppingStatusFilter}
                                 onChange={(e) => setShoppingStatusFilter(e.target.value)}
-                                className="rounded-xl border border-gray-200 bg-gray-50/60 px-3 py-2 text-xs font-semibold text-gray-700 outline-none focus:border-indigo-500 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300"
+                                className="w-full sm:w-auto rounded-xl border border-gray-200 bg-white py-1.5 sm:py-2 px-2.5 text-xs font-medium text-gray-700 shadow-sm outline-none focus:border-indigo-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300"
                             >
                                 <option value="all">All Items</option>
                                 <option value="pending">To Buy</option>
