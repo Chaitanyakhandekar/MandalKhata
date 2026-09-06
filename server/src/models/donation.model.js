@@ -68,7 +68,7 @@ const donationSchema = new mongoose.Schema({
         type: String,
         enum: ["cash", "upi", "bank"],
         default: "cash",
-        required: true
+        required: false
     },
     // Multiple payment records for this donation
     payments: {

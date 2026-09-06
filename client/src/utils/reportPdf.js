@@ -107,7 +107,7 @@ export const exportOverallFinancialReport = ({
     expenseRows = [],
     orgName = "Unique Residency Mandal"
 }) => {
-    const totalIncome = incomeRows.reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
+    const totalIncome = incomeRows.reduce((sum, d) => sum + (Number(d.collectedAmount !== undefined ? d.collectedAmount : d.amount) || 0), 0);
     const totalExpense = expenseRows.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
     const balance = totalIncome - totalExpense;
 
@@ -123,7 +123,7 @@ export const exportOverallFinancialReport = ({
     const alignments = ["left", "right", "left", "right"];
 
     const drawHeader = () => {
-        pdf.drawRow(["Income", "Amount", "Expense", "Amount"], widths, {
+        pdf.drawRow(["Income (Collected)", "Amount", "Expense", "Amount"], widths, {
             height: 9,
             bold: true,
             fontSize: 9.5,
@@ -137,9 +137,10 @@ export const exportOverallFinancialReport = ({
     for (let i = 0; i < maxRows; i++) {
         const inc = incomeRows[i];
         const exp = expenseRows[i];
+        const incAmount = inc ? (inc.collectedAmount !== undefined ? inc.collectedAmount : inc.amount) : null;
         pdf.drawRow([
             inc ? inc.donorName : "",
-            inc ? fmt(inc.amount) : "",
+            inc ? fmt(incAmount) : "",
             exp ? exp.title : "",
             exp ? fmt(exp.amount) : ""
         ], widths, {
@@ -181,7 +182,7 @@ export const exportOverallFinancialReport = ({
 };
 
 /**
- * 2. Donations Report (Exact same theme and grid structure)
+ * 2. Donations Report (Exact same theme and grid structure with Pledged, Collected, and Pending)
  */
 export const exportDonationsReport = ({
     festivalYear,
@@ -194,13 +195,13 @@ export const exportDonationsReport = ({
         orgName
     });
 
-    // 4 columns matching tableWidth = 182mm
-    // Receipt # (32) + Donor Name (85) + Date (35) + Amount (30) = 182
-    const widths = [32, 85, 35, 30];
-    const alignments = ["center", "left", "center", "right"];
+    // 6 columns matching tableWidth = 182mm
+    // Receipt # (26) + Donor Name (56) + Date (26) + Pledged (24) + Collected (26) + Pending (24) = 182
+    const widths = [26, 56, 26, 24, 26, 24];
+    const alignments = ["center", "left", "center", "right", "right", "right"];
 
     const drawHeader = () => {
-        pdf.drawRow(["Receipt #", "Donor Name", "Date", "Amount"], widths, {
+        pdf.drawRow(["Receipt #", "Donor Name", "Date", "Pledged", "Collected", "Pending"], widths, {
             height: 9,
             bold: true,
             fontSize: 9.5,
@@ -211,14 +212,22 @@ export const exportDonationsReport = ({
     drawHeader();
 
     const sorted = [...donations].sort((a, b) => new Date(a.date) - new Date(b.date));
-    const totalIncome = sorted.reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
+    const totalPledged = sorted.reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
+    const totalCollected = sorted.reduce((sum, d) => sum + (Number(d.collectedAmount !== undefined ? d.collectedAmount : d.amount) || 0), 0);
+    const totalPending = sorted.reduce((sum, d) => sum + (Number(d.pendingAmount !== undefined ? d.pendingAmount : 0) || 0), 0);
 
     sorted.forEach((don) => {
+        const pledged = don.amount || 0;
+        const collected = don.collectedAmount !== undefined ? don.collectedAmount : pledged;
+        const pending = don.pendingAmount !== undefined ? don.pendingAmount : Math.max(0, pledged - collected);
+
         pdf.drawRow([
             don.receiptNumber || "-",
             don.donorName || "",
             formatDate(don.date),
-            fmt(don.amount)
+            fmt(pledged),
+            fmt(collected),
+            fmt(pending)
         ], widths, {
             height: 8,
             fontSize: 9,
@@ -227,21 +236,12 @@ export const exportDonationsReport = ({
         });
     });
 
-    // Total Income
-    pdf.drawRow(["Total Income", "", "", fmt(totalIncome)], widths, {
+    // Total row
+    pdf.drawRow(["Total", "", "", fmt(totalPledged), fmt(totalCollected), fmt(totalPending)], widths, {
         height: 8.5,
         bold: true,
         fontSize: 9.5,
-        alignments: ["left", "left", "left", "right"],
-        onPageBreak: drawHeader
-    });
-
-    // Final Total
-    pdf.drawRow(["Final Total", "", "", fmt(totalIncome)], widths, {
-        height: 8.5,
-        bold: true,
-        fontSize: 9.5,
-        alignments: ["left", "left", "left", "right"],
+        alignments,
         onPageBreak: drawHeader
     });
 

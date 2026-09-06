@@ -33,7 +33,9 @@ import {
     CalendarDays,
     ArrowUpRight,
     KeyRound,
-    ChevronDown
+    ChevronDown,
+    Wallet,
+    Smartphone
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -56,8 +58,19 @@ const Dashboard = () => {
     const { user } = userAuthStore();
     const [stats, setStats] = useState({
         totalDonations: 0,
+        totalCollectedDonations: 0,
+        totalPledgedDonations: 0,
+        totalPendingDonations: 0,
         totalExpenses: 0,
         currentBalance: 0,
+        totalCashCollected: 0,
+        totalUpiCollected: 0,
+        totalBankCollected: 0,
+        cashBalance: 0,
+        upiBalance: 0,
+        bankBalance: 0,
+        expenseCashOutflow: 0,
+        expenseUpiOutflow: 0,
         totalTransactions: 0,
         recentActivity: [],
         expensesByCategory: [],
@@ -100,8 +113,19 @@ const Dashboard = () => {
                 const mp = data.mahaprasad || {};
                 setStats({
                     totalDonations: data.totalDonations ?? 0,
+                    totalCollectedDonations: data.totalCollectedDonations ?? (data.totalDonations ?? 0),
+                    totalPledgedDonations: data.totalPledgedDonations ?? 0,
+                    totalPendingDonations: data.totalPendingDonations ?? 0,
                     totalExpenses: data.totalExpenses ?? 0,
                     currentBalance: data.currentBalance ?? 0,
+                    totalCashCollected: data.totalCashCollected ?? 0,
+                    totalUpiCollected: data.totalUpiCollected ?? 0,
+                    totalBankCollected: data.totalBankCollected ?? 0,
+                    cashBalance: data.cashBalance ?? 0,
+                    upiBalance: data.upiBalance ?? 0,
+                    bankBalance: data.bankBalance ?? 0,
+                    expenseCashOutflow: data.expenseCashOutflow ?? 0,
+                    expenseUpiOutflow: data.expenseUpiOutflow ?? 0,
                     totalTransactions: data.totalTransactions ?? 0,
                     recentActivity: data.recentActivity ?? [],
                     expensesByCategory: data.expensesByCategory ?? [],
@@ -292,10 +316,10 @@ const Dashboard = () => {
                     </div>
                     <div className="mt-3">
                         <div className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
-                            {formatCurrency(stats.totalDonations)}
+                            {formatCurrency(stats.totalCollectedDonations || stats.totalDonations)}
                         </div>
                         <div className="text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1 truncate">
-                            Resident ₹{stats.totalResidentDonations.toLocaleString("en-IN")} • External ₹{stats.totalExternalDonorDonations.toLocaleString("en-IN")}
+                            Pledged ₹{(stats.totalPledgedDonations || 0).toLocaleString("en-IN")} • Pending ₹{(stats.totalPendingDonations || 0).toLocaleString("en-IN")}
                         </div>
                     </div>
                 </div>
@@ -356,6 +380,97 @@ const Dashboard = () => {
                         </div>
                         <div className="text-[10px] sm:text-xs text-sky-600 dark:text-sky-400 font-medium mt-1 truncate">
                             Logged Operations
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Payment Method Real-time Balances (Cash in Hand vs UPI Account) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-5 mb-4 sm:mb-6">
+                {/* Cash in Hand */}
+                <div className="rounded-xl sm:rounded-2xl border border-emerald-100/80 bg-gradient-to-br from-white to-emerald-50/20 p-3.5 sm:p-5 shadow-sm sm:shadow-md shadow-emerald-50/50 dark:border-emerald-900/30 dark:from-gray-900 dark:to-emerald-950/10">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
+                                <Wallet className="h-4 w-4 sm:h-5 sm:w-5" />
+                            </div>
+                            <div>
+                                <span className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                    Cash in Hand
+                                </span>
+                                <div className="text-[10px] text-gray-400">Physical Cash Balance</div>
+                            </div>
+                        </div>
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 dark:bg-emerald-900/40 dark:text-emerald-300 px-2 py-0.5 rounded-md">
+                            Cash
+                        </span>
+                    </div>
+                    <div className="mt-3">
+                        <div className={`text-lg sm:text-2xl font-bold ${stats.cashBalance >= 0 ? "text-gray-900 dark:text-white" : "text-rose-600 dark:text-rose-400"}`}>
+                            {formatCurrency(stats.cashBalance)}
+                        </div>
+                        <div className="text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1 truncate">
+                            Collected ₹{stats.totalCashCollected.toLocaleString("en-IN")} • Spent ₹{stats.expenseCashOutflow.toLocaleString("en-IN")}
+                        </div>
+                    </div>
+                </div>
+
+                {/* UPI Account Balance */}
+                <div className="rounded-xl sm:rounded-2xl border border-indigo-100/80 bg-gradient-to-br from-white to-indigo-50/20 p-3.5 sm:p-5 shadow-sm sm:shadow-md shadow-indigo-50/50 dark:border-indigo-900/30 dark:from-gray-900 dark:to-indigo-950/10">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300">
+                                <Smartphone className="h-4 w-4 sm:h-5 sm:w-5" />
+                            </div>
+                            <div>
+                                <span className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                    UPI / Online Account
+                                </span>
+                                <div className="text-[10px] text-gray-400">Digital Bank Balance</div>
+                            </div>
+                        </div>
+                        <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100/80 dark:bg-indigo-900/40 dark:text-indigo-300 px-2 py-0.5 rounded-md">
+                            UPI
+                        </span>
+                    </div>
+                    <div className="mt-3">
+                        <div className={`text-lg sm:text-2xl font-bold ${stats.upiBalance >= 0 ? "text-gray-900 dark:text-white" : "text-rose-600 dark:text-rose-400"}`}>
+                            {formatCurrency(stats.upiBalance)}
+                        </div>
+                        <div className="text-[10px] sm:text-xs text-indigo-600 dark:text-indigo-400 font-medium mt-1 truncate">
+                            Collected ₹{stats.totalUpiCollected.toLocaleString("en-IN")} • Spent ₹{stats.expenseUpiOutflow.toLocaleString("en-IN")}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Collection Breakdown Summary */}
+                <div className="rounded-xl sm:rounded-2xl border border-gray-100 bg-white p-3.5 sm:p-5 shadow-sm sm:shadow-md shadow-gray-100/40 dark:border-gray-800 dark:bg-gray-900 sm:col-span-2 lg:col-span-1">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200">
+                            Donation Breakdown
+                        </span>
+                        <span className="text-[10px] font-medium text-gray-400">
+                            {stats.totalPledgedDonations > 0 ? `${Math.round(((stats.totalCollectedDonations || 0) / stats.totalPledgedDonations) * 100)}% Collected` : "Overview"}
+                        </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-center mt-3">
+                        <div className="rounded-xl bg-gray-50/80 p-2 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800">
+                            <div className="text-[10px] text-gray-400 font-medium">Pledged</div>
+                            <div className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white mt-0.5 truncate">
+                                ₹{stats.totalPledgedDonations.toLocaleString("en-IN")}
+                            </div>
+                        </div>
+                        <div className="rounded-xl bg-emerald-50/70 p-2 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30">
+                            <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Collected</div>
+                            <div className="text-xs sm:text-sm font-bold text-emerald-700 dark:text-emerald-300 mt-0.5 truncate">
+                                ₹{stats.totalCollectedDonations.toLocaleString("en-IN")}
+                            </div>
+                        </div>
+                        <div className="rounded-xl bg-amber-50/70 p-2 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30">
+                            <div className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">Pending</div>
+                            <div className="text-xs sm:text-sm font-bold text-amber-700 dark:text-amber-300 mt-0.5 truncate">
+                                ₹{stats.totalPendingDonations.toLocaleString("en-IN")}
+                            </div>
                         </div>
                     </div>
                 </div>

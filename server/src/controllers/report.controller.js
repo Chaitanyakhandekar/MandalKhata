@@ -56,16 +56,13 @@ const getDashboardStats = asyncHandler(async (req, res) => {
     const yearMatch = { festivalYear: targetYear, createdBy: userId };
 
     // Fetch all donations and expenses for target festival year
-    const [donations, expensesAggregate] = await Promise.all([
+    const [donations, expenses] = await Promise.all([
         Donation.find(yearMatch).lean(),
-        Expense.aggregate([
-            { $match: yearMatch },
-            { $group: { _id: null, total: { $sum: "$amount" }, count: { $sum: 1 } } }
-        ])
+        Expense.find(yearMatch).lean()
     ]);
 
-    const totalExpenses = expensesAggregate[0]?.total || 0;
-    const expensesCount = expensesAggregate[0]?.count || 0;
+    const totalExpenses = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    const expensesCount = expenses.length;
 
     // Financial aggregates for donations: Pledged vs Collected vs Pending
     let totalPledgedDonations = 0;
@@ -138,7 +135,31 @@ const getDashboardStats = asyncHandler(async (req, res) => {
         amount
     }));
 
-    // Liquid cash balance strictly reflects collected donations minus expenses
+    // Aggregate expense outflows by payment method
+    const expenseMethodMap = { cash: 0, upi: 0, bank: 0 };
+    expenses.forEach(e => {
+        if (Array.isArray(e.payments) && e.payments.length > 0) {
+            e.payments.forEach(p => {
+                const pAmt = Number(p.amount) || 0;
+                const pMethod = (p.paymentMethod || "cash").toLowerCase();
+                if (expenseMethodMap[pMethod] !== undefined) {
+                    expenseMethodMap[pMethod] += pAmt;
+                } else {
+                    expenseMethodMap[pMethod] = (expenseMethodMap[pMethod] || 0) + pAmt;
+                }
+            });
+        } else if (e.paymentStatus === "paid" || (e.paidAmount && e.paidAmount > 0)) {
+            const pAmt = e.paidAmount != null ? e.paidAmount : (e.amount || 0);
+            expenseMethodMap.cash += pAmt;
+        }
+    });
+
+    // Method-specific liquid balances: Inflows - Outflows
+    const cashBalance = (methodMap.cash || 0) - (expenseMethodMap.cash || 0);
+    const upiBalance = (methodMap.upi || 0) - (expenseMethodMap.upi || 0);
+    const bankBalance = (methodMap.bank || 0) - (expenseMethodMap.bank || 0);
+
+    // Liquid total balance strictly reflects collected donations minus expenses
     const currentBalance = totalCollectedDonations - totalExpenses;
     const totalTransactions = donations.length + expensesCount;
 
@@ -202,6 +223,12 @@ const getDashboardStats = asyncHandler(async (req, res) => {
         totalPledgedDonations,
         totalCollectedDonations,
         totalPendingDonations,
+        totalCashCollected: methodMap.cash || 0,
+        totalUpiCollected: methodMap.upi || 0,
+        totalBankCollected: methodMap.bank || 0,
+        cashBalance,
+        upiBalance,
+        bankBalance,
         totalExpenses,
         currentBalance,
         totalTransactions,
@@ -337,15 +364,25 @@ const getLedger = asyncHandler(async (req, res) => {
     mergedTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
 
     let balance = 0;
+    let cashBal = 0;
+    let upiBal = 0;
     const ledger = mergedTransactions.map(tx => {
+        const amt = tx.amount || 0;
+        const method = (tx.paymentMethod || "cash").toLowerCase();
         if (tx.type === "donation") {
-            balance += tx.amount;
+            balance += amt;
+            if (method === "cash") cashBal += amt;
+            else if (method === "upi") upiBal += amt;
         } else {
-            balance -= tx.amount;
+            balance -= amt;
+            if (method === "cash") cashBal -= amt;
+            else if (method === "upi") upiBal -= amt;
         }
         return {
             ...tx,
-            runningBalance: balance
+            runningBalance: balance,
+            runningCashBalance: cashBal,
+            runningUpiBalance: upiBal
         };
     });
 
