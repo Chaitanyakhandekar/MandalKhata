@@ -14,7 +14,8 @@ import {
     UtensilsCrossed,
     FileSpreadsheet,
     Layers,
-    Users
+    Users,
+    CheckSquare
 } from "lucide-react";
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
@@ -29,6 +30,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         { name: "Expenses", path: "/expenses", icon: Receipt },
         { name: "Ledger", path: "/ledger", icon: BookOpen },
         { name: "Mahaprasad", path: "/mahaprasad", icon: UtensilsCrossed },
+        { name: "Tasks & Notes", path: "/tasks-notes", icon: CheckSquare },
         { name: "Reports", path: "/reports", icon: BarChart3 },
         { name: "Bulk Import", path: "/bulk-import", icon: FileSpreadsheet },
         { name: "Settings", path: "/settings", icon: Settings }
