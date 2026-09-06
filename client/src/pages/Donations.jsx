@@ -628,7 +628,6 @@ const Donations = () => {
             note: donation.note || "",
             date: new Date(donation.date).toISOString().split("T")[0]
         });
-        setInitPaymentMethod(donation.paymentMethod || "cash");
         setIsOpen(true);
     };
 
