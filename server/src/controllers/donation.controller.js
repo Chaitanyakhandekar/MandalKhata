@@ -11,8 +11,62 @@ const DONOR_TYPES = ["resident", "external"];
 const DONOR_CATEGORIES = ["Individual", "Business", "Organization", "Shop", "Well-wisher"];
 const PHONE_REGEX = /^[0-9+\-\s]{7,15}$/;
 
+/**
+ * Helper to ensure legacy donation documents without payments array
+ * are properly shaped with collectedAmount, pendingAmount, collectionStatus, and payments history.
+ */
+const normalizeDonationDoc = (doc) => {
+    const d = doc && typeof doc.toObject === "function" ? doc.toObject() : { ...doc };
+    if (!d) return d;
+
+    if (!Array.isArray(d.payments) || d.payments.length === 0) {
+        // Legacy donation: treated as fully collected if not explicitly marked otherwise
+        const amountVal = d.amount || 0;
+        d.collectedAmount = d.collectedAmount != null ? d.collectedAmount : amountVal;
+        d.pendingAmount = d.pendingAmount != null ? d.pendingAmount : Math.max(amountVal - d.collectedAmount, 0);
+        d.collectionStatus = d.collectionStatus || (d.pendingAmount === 0 ? "paid" : "partially_collected");
+        if (d.collectedAmount > 0) {
+            d.payments = [
+                {
+                    _id: d._id,
+                    amount: d.collectedAmount,
+                    paymentMethod: d.paymentMethod || "cash",
+                    date: d.date || d.createdAt,
+                    note: d.note || "",
+                    createdAt: d.createdAt
+                }
+            ];
+        } else {
+            d.payments = [];
+        }
+    } else {
+        // Compute dynamically if needed
+        const totalPaid = d.payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+        d.collectedAmount = totalPaid;
+        d.pendingAmount = Math.max((d.amount || 0) - totalPaid, 0);
+        if (totalPaid === 0) {
+            d.collectionStatus = "not_collected";
+        } else if (d.pendingAmount === 0) {
+            d.collectionStatus = "paid";
+        } else {
+            d.collectionStatus = "partially_collected";
+        }
+    }
+    return d;
+};
+
 const getDonations = asyncHandler(async (req, res) => {
-    const { festivalYear, search, paymentMethod, donorType, startDate, endDate, page = 1, limit = 50 } = req.query;
+    const {
+        festivalYear,
+        search,
+        paymentMethod,
+        collectionStatus,
+        donorType,
+        startDate,
+        endDate,
+        page = 1,
+        limit = 50
+    } = req.query;
 
     const query = { createdBy: req.user._id };
 
@@ -26,19 +80,37 @@ const getDonations = asyncHandler(async (req, res) => {
         }
     }
 
-    // Keyword search (donorName or receiptNumber)
+    // Keyword search (donorName or receiptNumber or phone)
     if (search && search.trim()) {
         const regex = new RegExp(search.trim(), "i");
         query.$or = [
             { donorName: regex },
             { receiptNumber: regex },
-            { phone: regex }
+            { phone: regex },
+            { note: regex }
         ];
     }
 
-    // Payment method filter
+    // Collection Status filter (all, not_collected, partially_collected, paid)
+    if (collectionStatus && ["not_collected", "partially_collected", "paid"].includes(collectionStatus)) {
+        if (collectionStatus === "paid") {
+            // For backward compatibility: paid matches collectionStatus == 'paid' OR collectionStatus not set
+            query.$or = [
+                { collectionStatus: "paid" },
+                { collectionStatus: { $exists: false } },
+                { collectionStatus: null }
+            ];
+        } else {
+            query.collectionStatus = collectionStatus;
+        }
+    }
+
+    // Payment method filter (checks across multiple payments or top-level paymentMethod)
     if (paymentMethod && ["cash", "upi", "bank"].includes(paymentMethod)) {
-        query.paymentMethod = paymentMethod;
+        query.$or = [
+            { "payments.paymentMethod": paymentMethod },
+            { paymentMethod: paymentMethod }
+        ];
     }
 
     // Donor type filter (resident / external)
@@ -59,11 +131,11 @@ const getDonations = asyncHandler(async (req, res) => {
         }
     }
 
-const pageNum = Math.max(parseInt(page) || 1, 1);
+    const pageNum = Math.max(parseInt(page) || 1, 1);
     const limitNum = Math.min(Math.max(parseInt(limit) || 50, 1), 100);
     const skipIndex = (pageNum - 1) * limitNum;
 
-    const donations = await Donation.find(query)
+    const rawDonations = await Donation.find(query)
         .sort({ date: -1, createdAt: -1 })
         .skip(skipIndex)
         .limit(limitNum)
@@ -71,29 +143,62 @@ const pageNum = Math.max(parseInt(page) || 1, 1);
         .populate("household", "building wing flatNumber headOfFamily phone memberCount active")
         .populate("externalDonor", "donorName donorType organizationName active");
 
+    const donations = rawDonations.map(normalizeDonationDoc);
     const total = await Donation.countDocuments(query);
 
-    const [amountAggregate] = await Donation.aggregate([
-        { $match: query },
-        { $group: { _id: null, totalAmount: { $sum: "$amount" } } }
-    ]);
+    // Dynamic Financial Summary Aggregations
+    const allMatches = await Donation.find(query).select("amount collectedAmount pendingAmount collectionStatus payments").lean();
 
-    const totalAmount = amountAggregate && amountAggregate.totalAmount != null ? amountAggregate.totalAmount : 0;
+    let totalPledgedAmount = 0;
+    let totalCollectedAmount = 0;
+    let totalPendingAmount = 0;
 
-    return res.status(200).json(new ApiResponse(200, {
-        donations,
-        total,
-        totalAmount,
-        page: pageNum,
-        pages: Math.ceil(total / limitNum)
-    }, "Donations fetched successfully"));
+    allMatches.forEach((m) => {
+        const norm = normalizeDonationDoc(m);
+        totalPledgedAmount += norm.amount || 0;
+        totalCollectedAmount += norm.collectedAmount || 0;
+        totalPendingAmount += norm.pendingAmount || 0;
+    });
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            {
+                donations,
+                total,
+                totalAmount: totalPledgedAmount,
+                totalPledgedAmount,
+                totalCollectedAmount,
+                totalPendingAmount,
+                page: pageNum,
+                pages: Math.ceil(total / limitNum)
+            },
+            "Donations fetched successfully"
+        )
+    );
 });
 
 const createDonation = asyncHandler(async (req, res) => {
     const {
-        donorName, amount, paymentMethod, phone, note, date, festivalYear,
-        donorType, householdId, externalDonorId, donorCategory, organizationName, address,
-        building, wing, flatNumber, headOfFamily, memberCount
+        donorName,
+        amount,
+        paymentMethod,
+        initialPayments,
+        phone,
+        note,
+        date,
+        festivalYear,
+        donorType,
+        householdId,
+        externalDonorId,
+        donorCategory,
+        organizationName,
+        address,
+        building,
+        wing,
+        flatNumber,
+        headOfFamily,
+        memberCount
     } = req.body;
 
     const resolvedDonorType = donorType || "external";
@@ -101,10 +206,74 @@ const createDonation = asyncHandler(async (req, res) => {
         return res.status(400).json(new ApiResponse(400, null, "Donor type must be either 'resident' or 'external'", false));
     }
 
-    const amountValue = Number(amount);
-    if (amount === undefined || amount === null || Number.isNaN(amountValue) || amountValue < 0) {
-        return res.status(400).json(new ApiResponse(400, null, "Valid donation amount is required", false));
+    const pledgedAmount = Number(amount);
+    if (amount === undefined || amount === null || Number.isNaN(pledgedAmount) || pledgedAmount < 0) {
+        return res.status(400).json(new ApiResponse(400, null, "Valid donation pledged amount is required", false));
     }
+
+    // Process initial payments
+    const paymentsList = [];
+    let totalCollected = 0;
+    const donationDate = date ? new Date(date) : new Date();
+
+    if (Array.isArray(initialPayments) && initialPayments.length > 0) {
+        for (let i = 0; i < initialPayments.length; i++) {
+            const p = initialPayments[i];
+            const pAmount = Number(p.amount);
+            if (isNaN(pAmount) || pAmount <= 0) {
+                return res.status(400).json(new ApiResponse(400, null, `Payment #${i + 1} amount must be greater than 0`, false));
+            }
+            const validMethod = ["cash", "upi", "bank"].includes(p.paymentMethod) ? p.paymentMethod : "cash";
+            const pDate = p.date ? new Date(p.date) : donationDate;
+            paymentsList.push({
+                amount: pAmount,
+                paymentMethod: validMethod,
+                date: pDate,
+                note: p.note ? String(p.note).trim() : "",
+                receivedBy: req.user._id,
+                createdAt: new Date()
+            });
+            totalCollected += pAmount;
+        }
+
+        if (totalCollected > pledgedAmount) {
+            return res.status(400).json(
+                new ApiResponse(
+                    400,
+                    null,
+                    `Total initial payments (₹${totalCollected.toLocaleString("en-IN")}) cannot exceed the pledged amount of ₹${pledgedAmount.toLocaleString("en-IN")}`,
+                    false
+                )
+            );
+        }
+    } else if (initialPayments !== undefined && Array.isArray(initialPayments) && initialPayments.length === 0) {
+        // User explicitly specified zero initial payments (Pledge Only / Collect Later)
+        totalCollected = 0;
+    } else {
+        // Backward-compatible default: full payment using paymentMethod if pledgedAmount > 0
+        const defaultMethod = ["cash", "upi", "bank"].includes(paymentMethod) ? paymentMethod : "cash";
+        if (pledgedAmount > 0) {
+            paymentsList.push({
+                amount: pledgedAmount,
+                paymentMethod: defaultMethod,
+                date: donationDate,
+                note: note ? note.trim() : "",
+                receivedBy: req.user._id,
+                createdAt: new Date()
+            });
+            totalCollected = pledgedAmount;
+        }
+    }
+
+    const pendingAmount = Math.max(pledgedAmount - totalCollected, 0);
+    let collectionStatus = "paid";
+    if (totalCollected === 0) {
+        collectionStatus = "not_collected";
+    } else if (pendingAmount > 0) {
+        collectionStatus = "partially_collected";
+    }
+
+    const primaryPaymentMethod = paymentsList[0]?.paymentMethod || paymentMethod || "cash";
 
     let resolvedDonorName = donorName ? donorName.trim() : "";
     let resolvedHousehold = null;
@@ -112,7 +281,7 @@ const createDonation = asyncHandler(async (req, res) => {
 
     if (resolvedDonorType === "resident") {
         if (!householdId) {
-            // Enter Manually & Assign Household path: build the household first if the flat is unregistered
+            // Enter Manually & Assign Household path
             const buildingValue = Number(building);
             const flatValue = Number(flatNumber);
             const memberValue = Number(memberCount);
@@ -144,7 +313,7 @@ const createDonation = asyncHandler(async (req, res) => {
             }
             const wingRanges = normalizeConfigRanges(config);
             if (!isFlatInRanges(wingRanges, flatValue)) {
-                return res.status(400).json(new ApiResponse(400, null, `Flat ${flatValue} is not part of the configured flats for Building ${buildingValue}, Wing ${wingValue} (configured ranges: ${describeRanges(wingRanges)}). Select a flat from the configured ranges or add this range to the wing configuration first.`, false));
+                return res.status(400).json(new ApiResponse(400, null, `Flat ${flatValue} is not part of the configured flats for Building ${buildingValue}, Wing ${wingValue} (configured ranges: ${describeRanges(wingRanges)}).`, false));
             }
 
             const existingHousehold = await Household.findOne({
@@ -160,7 +329,6 @@ const createDonation = asyncHandler(async (req, res) => {
                     return res.status(409).json(new ApiResponse(409, { household: existingHousehold }, conflictMessage, false));
                 }
 
-                // Reuse the previously deactivated household instead of duplicating the record
                 existingHousehold.active = true;
                 existingHousehold.headOfFamily = headOfFamily.trim();
                 existingHousehold.phone = phone ? phone.trim() : existingHousehold.phone;
@@ -192,7 +360,7 @@ const createDonation = asyncHandler(async (req, res) => {
                             active: true
                         });
                         if (raceHousehold) {
-                            const conflictMessage = `A household already exists for Building ${buildingValue}, Wing ${wingValue}, Flat ${flatValue} (${raceHousehold.headOfFamily}). Use the existing household or update its occupant information before completing this donation.`;
+                            const conflictMessage = `A household already exists for Building ${buildingValue}, Wing ${wingValue}, Flat ${flatValue} (${raceHousehold.headOfFamily}).`;
                             return res.status(409).json(new ApiResponse(409, { household: raceHousehold }, conflictMessage, false));
                         }
                     }
@@ -229,7 +397,6 @@ const createDonation = asyncHandler(async (req, res) => {
             resolvedExternalDonor = donor._id;
             resolvedDonorName = donor.donorName;
         } else {
-            // Link to an existing matching active donor, otherwise create a new external donor record
             let donor = await ExternalDonor.findOne({ createdBy: req.user._id, donorName: resolvedDonorName, active: true });
             if (!donor) {
                 donor = await ExternalDonor.create({
@@ -256,7 +423,7 @@ const createDonation = asyncHandler(async (req, res) => {
         targetYear = activeYear.year;
     }
 
-    // Auto-generate sequential receipt number (retried on duplicate-key collisions)
+    // Auto-generate sequential receipt number
     let count = await Donation.countDocuments({ festivalYear: targetYear, createdBy: req.user._id });
     let receiptNumber;
     let donation;
@@ -264,15 +431,19 @@ const createDonation = asyncHandler(async (req, res) => {
 
     while (!isSaved) {
         count++;
-        receiptNumber = `MK-${targetYear}-${String(count).padStart(4, '0')}`;
+        receiptNumber = `MK-${targetYear}-${String(count).padStart(4, "0")}`;
         try {
             donation = await Donation.create({
                 donorName: resolvedDonorName,
-                amount: amountValue,
-                paymentMethod: paymentMethod || "cash",
+                amount: pledgedAmount,
+                collectedAmount: totalCollected,
+                pendingAmount,
+                collectionStatus,
+                paymentMethod: primaryPaymentMethod,
+                payments: paymentsList,
                 phone: phone ? phone.trim() : "",
                 note: note ? note.trim() : "",
-                date: date ? new Date(date) : new Date(),
+                date: donationDate,
                 donorType: resolvedDonorType,
                 household: resolvedHousehold,
                 externalDonor: resolvedExternalDonor,
@@ -294,12 +465,227 @@ const createDonation = asyncHandler(async (req, res) => {
         .populate("household", "building wing flatNumber headOfFamily")
         .populate("externalDonor", "donorName donorType organizationName");
 
-    return res.status(201).json(new ApiResponse(201, populatedDonation, "Donation recorded successfully"));
+    return res.status(201).json(new ApiResponse(201, normalizeDonationDoc(populatedDonation), "Donation recorded successfully"));
+});
+
+const addPaymentToDonation = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { amount, paymentMethod, date, note } = req.body;
+
+    const donation = await Donation.findById(id);
+    if (!donation) {
+        return res.status(404).json(new ApiResponse(404, null, "Donation record not found", false));
+    }
+
+    if (donation.createdBy.toString() !== req.user._id.toString()) {
+        return res.status(403).json(new ApiResponse(403, null, "You can only add payments to your own donations", false));
+    }
+
+    if (amount === undefined || amount === null || isNaN(Number(amount)) || Number(amount) <= 0) {
+        return res.status(400).json(new ApiResponse(400, null, "Payment amount must be greater than 0", false));
+    }
+
+    const paymentNum = Number(amount);
+
+    // Calculate current collected total
+    let currentCollected = 0;
+    if (Array.isArray(donation.payments) && donation.payments.length > 0) {
+        currentCollected = donation.payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+    } else {
+        currentCollected = donation.collectedAmount != null ? donation.collectedAmount : (donation.collectionStatus === "paid" ? donation.amount : 0);
+    }
+
+    const outstanding = Math.max(donation.amount - currentCollected, 0);
+
+    if (outstanding <= 0) {
+        return res.status(400).json(new ApiResponse(400, null, "This donation is already fully collected", false));
+    }
+
+    if (paymentNum > outstanding) {
+        return res.status(400).json(
+            new ApiResponse(
+                400,
+                null,
+                `Payment amount (₹${paymentNum.toLocaleString("en-IN")}) cannot exceed remaining pending amount of ₹${outstanding.toLocaleString("en-IN")}`,
+                false
+            )
+        );
+    }
+
+    const validPaymentMethod = ["cash", "upi", "bank"].includes(paymentMethod) ? paymentMethod : "cash";
+    const paymentDate = date ? new Date(date) : new Date();
+
+    const newPayment = {
+        amount: paymentNum,
+        paymentMethod: validPaymentMethod,
+        date: paymentDate,
+        note: note ? note.trim() : "",
+        receivedBy: req.user._id,
+        createdAt: new Date()
+    };
+
+    // If migrating legacy donation that had no payments array
+    if (!Array.isArray(donation.payments) || donation.payments.length === 0) {
+        if (currentCollected > 0) {
+            donation.payments = [
+                {
+                    amount: currentCollected,
+                    paymentMethod: donation.paymentMethod || "cash",
+                    date: donation.date || donation.createdAt,
+                    note: donation.note || "",
+                    receivedBy: req.user._id,
+                    createdAt: donation.createdAt
+                }
+            ];
+        } else {
+            donation.payments = [];
+        }
+    }
+
+    donation.payments.push(newPayment);
+
+    const newCollected = currentCollected + paymentNum;
+    const newPending = Math.max(donation.amount - newCollected, 0);
+
+    donation.collectedAmount = newCollected;
+    donation.pendingAmount = newPending;
+    donation.collectionStatus = newPending === 0 ? "paid" : "partially_collected";
+
+    await donation.save();
+
+    const populated = await Donation.findById(donation._id)
+        .populate("createdBy", "name username")
+        .populate("household", "building wing flatNumber headOfFamily")
+        .populate("externalDonor", "donorName donorType organizationName");
+
+    return res.status(200).json(new ApiResponse(200, normalizeDonationDoc(populated), "Payment added successfully"));
+});
+
+const updateDonationPayment = asyncHandler(async (req, res) => {
+    const { id, paymentId } = req.params;
+    const { amount, paymentMethod, date, note } = req.body;
+
+    const donation = await Donation.findById(id);
+    if (!donation) {
+        return res.status(404).json(new ApiResponse(404, null, "Donation record not found", false));
+    }
+
+    if (donation.createdBy.toString() !== req.user._id.toString()) {
+        return res.status(403).json(new ApiResponse(403, null, "You can only update payments on your own donations", false));
+    }
+
+    const paymentIndex = (donation.payments || []).findIndex((p) => p._id.toString() === paymentId);
+    if (paymentIndex === -1) {
+        return res.status(404).json(new ApiResponse(404, null, "Payment record not found", false));
+    }
+
+    if (amount !== undefined) {
+        const newAmount = Number(amount);
+        if (isNaN(newAmount) || newAmount <= 0) {
+            return res.status(400).json(new ApiResponse(400, null, "Payment amount must be greater than 0", false));
+        }
+
+        const otherPaymentsSum = donation.payments
+            .filter((_, idx) => idx !== paymentIndex)
+            .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+
+        if (otherPaymentsSum + newAmount > donation.amount) {
+            return res.status(400).json(
+                new ApiResponse(
+                    400,
+                    null,
+                    `Total payments (₹${(otherPaymentsSum + newAmount).toLocaleString("en-IN")}) cannot exceed the pledged amount of ₹${donation.amount.toLocaleString("en-IN")}`,
+                    false
+                )
+            );
+        }
+
+        donation.payments[paymentIndex].amount = newAmount;
+    }
+
+    if (paymentMethod !== undefined) {
+        const validMethod = ["cash", "upi", "bank"].includes(paymentMethod) ? paymentMethod : "cash";
+        donation.payments[paymentIndex].paymentMethod = validMethod;
+    }
+
+    if (date !== undefined) {
+        donation.payments[paymentIndex].date = new Date(date);
+    }
+
+    if (note !== undefined) {
+        donation.payments[paymentIndex].note = note.trim();
+    }
+
+    // Recalculate totals
+    const newCollected = donation.payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+    const newPending = Math.max(donation.amount - newCollected, 0);
+
+    donation.collectedAmount = newCollected;
+    donation.pendingAmount = newPending;
+    if (newCollected === 0) {
+        donation.collectionStatus = "not_collected";
+    } else if (newPending === 0) {
+        donation.collectionStatus = "paid";
+    } else {
+        donation.collectionStatus = "partially_collected";
+    }
+
+    await donation.save();
+
+    const populated = await Donation.findById(donation._id)
+        .populate("createdBy", "name username")
+        .populate("household", "building wing flatNumber headOfFamily")
+        .populate("externalDonor", "donorName donorType organizationName");
+
+    return res.status(200).json(new ApiResponse(200, normalizeDonationDoc(populated), "Payment record updated successfully"));
+});
+
+const deleteDonationPayment = asyncHandler(async (req, res) => {
+    const { id, paymentId } = req.params;
+
+    const donation = await Donation.findById(id);
+    if (!donation) {
+        return res.status(404).json(new ApiResponse(404, null, "Donation record not found", false));
+    }
+
+    if (donation.createdBy.toString() !== req.user._id.toString()) {
+        return res.status(403).json(new ApiResponse(403, null, "You can only delete payments from your own donations", false));
+    }
+
+    const paymentIndex = (donation.payments || []).findIndex((p) => p._id.toString() === paymentId);
+    if (paymentIndex === -1) {
+        return res.status(404).json(new ApiResponse(404, null, "Payment record not found", false));
+    }
+
+    donation.payments.splice(paymentIndex, 1);
+
+    // Recalculate totals
+    const newCollected = donation.payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+    const newPending = Math.max(donation.amount - newCollected, 0);
+
+    donation.collectedAmount = newCollected;
+    donation.pendingAmount = newPending;
+    if (newCollected === 0) {
+        donation.collectionStatus = "not_collected";
+    } else if (newPending === 0) {
+        donation.collectionStatus = "paid";
+    } else {
+        donation.collectionStatus = "partially_collected";
+    }
+
+    await donation.save();
+
+    const populated = await Donation.findById(donation._id)
+        .populate("createdBy", "name username")
+        .populate("household", "building wing flatNumber headOfFamily")
+        .populate("externalDonor", "donorName donorType organizationName");
+
+    return res.status(200).json(new ApiResponse(200, normalizeDonationDoc(populated), "Payment record deleted successfully"));
 });
 
 const updateDonation = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const { donorName, amount, paymentMethod, phone, note, date, donorType, householdId, externalDonorId, donorCategory, organizationName, address } = req.body;
+    const { donorName, amount, paymentMethod, phone, note, date, donorType, householdId, externalDonorId } = req.body;
 
     const donation = await Donation.findById(id);
     if (!donation) {
@@ -310,7 +696,45 @@ const updateDonation = asyncHandler(async (req, res) => {
         return res.status(403).json(new ApiResponse(403, null, "You can only update your own donations", false));
     }
 
+    // Determine current collected amount
+    let currentCollected = 0;
+    if (Array.isArray(donation.payments) && donation.payments.length > 0) {
+        currentCollected = donation.payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+    } else {
+        currentCollected = donation.collectedAmount != null ? donation.collectedAmount : (donation.collectionStatus === "paid" ? donation.amount : 0);
+    }
+
     const updateData = {};
+
+    // Validate pledged amount
+    if (amount !== undefined) {
+        const amountValue = Number(amount);
+        if (Number.isNaN(amountValue) || amountValue < 0) {
+            return res.status(400).json(new ApiResponse(400, null, "Pledged amount cannot be negative", false));
+        }
+
+        if (amountValue < currentCollected) {
+            return res.status(400).json(
+                new ApiResponse(
+                    400,
+                    null,
+                    `Pledged amount (₹${amountValue.toLocaleString("en-IN")}) cannot be less than already collected payments (₹${currentCollected.toLocaleString("en-IN")})`,
+                    false
+                )
+            );
+        }
+
+        updateData.amount = amountValue;
+        updateData.collectedAmount = currentCollected;
+        updateData.pendingAmount = Math.max(amountValue - currentCollected, 0);
+        if (currentCollected === 0) {
+            updateData.collectionStatus = "not_collected";
+        } else if (updateData.pendingAmount === 0) {
+            updateData.collectionStatus = "paid";
+        } else {
+            updateData.collectionStatus = "partially_collected";
+        }
+    }
 
     // Handle donor type transitions
     if (donorType !== undefined && donation.donorType !== donorType) {
@@ -342,7 +766,6 @@ const updateDonation = asyncHandler(async (req, res) => {
             }
         }
     } else if (donation.donorType === "external" && externalDonorId !== undefined) {
-        // Re-link to a different existing external donor
         if (externalDonorId) {
             const donor = await ExternalDonor.findOne({ _id: externalDonorId, createdBy: req.user._id });
             if (!donor || !donor.active) {
@@ -354,7 +777,6 @@ const updateDonation = asyncHandler(async (req, res) => {
             updateData.externalDonor = null;
         }
     } else if (donation.donorType === "resident" && householdId !== undefined) {
-        // Re-link the existing resident donation to a different household
         const household = await Household.findOne({ _id: householdId, createdBy: req.user._id });
         if (!household || !household.active) {
             return res.status(400).json(new ApiResponse(400, null, "Please select a valid active resident household", false));
@@ -366,28 +788,17 @@ const updateDonation = asyncHandler(async (req, res) => {
     if (donation.donorType !== "resident" && donorType !== "resident" && donorName !== undefined && donorName.trim()) {
         updateData.donorName = donorName.trim();
     }
-    if (amount !== undefined) {
-        const amountValue = Number(amount);
-        if (Number.isNaN(amountValue) || amountValue < 0) {
-            return res.status(400).json(new ApiResponse(400, null, "Amount cannot be negative", false));
-        }
-        updateData.amount = amountValue;
-    }
     if (paymentMethod !== undefined) updateData.paymentMethod = paymentMethod;
     if (phone !== undefined) updateData.phone = phone.trim();
     if (note !== undefined) updateData.note = note.trim();
     if (date !== undefined) updateData.date = new Date(date);
 
-    const updatedDonation = await Donation.findByIdAndUpdate(
-        id,
-        { $set: updateData },
-        { new: true }
-    )
+    const updatedDonation = await Donation.findByIdAndUpdate(id, { $set: updateData }, { new: true })
         .populate("createdBy", "name username")
         .populate("household", "building wing flatNumber headOfFamily")
         .populate("externalDonor", "donorName donorType organizationName");
 
-    return res.status(200).json(new ApiResponse(200, updatedDonation, "Donation updated successfully"));
+    return res.status(200).json(new ApiResponse(200, normalizeDonationDoc(updatedDonation), "Donation updated successfully"));
 });
 
 const deleteDonation = asyncHandler(async (req, res) => {
@@ -410,6 +821,10 @@ const deleteDonation = asyncHandler(async (req, res) => {
 export {
     getDonations,
     createDonation,
+    addPaymentToDonation,
+    updateDonationPayment,
+    deleteDonationPayment,
     updateDonation,
-    deleteDonation
+    deleteDonation,
+    normalizeDonationDoc
 };

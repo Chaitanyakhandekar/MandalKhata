@@ -15,6 +15,9 @@ const getDashboardStats = asyncHandler(async (req, res) => {
         if (!activeYear) {
             return res.status(200).json(new ApiResponse(200, {
                 totalDonations: 0,
+                totalPledgedDonations: 0,
+                totalCollectedDonations: 0,
+                totalPendingDonations: 0,
                 totalExpenses: 0,
                 currentBalance: 0,
                 totalTransactions: 0,
@@ -52,60 +55,111 @@ const getDashboardStats = asyncHandler(async (req, res) => {
 
     const yearMatch = { festivalYear: targetYear, createdBy: userId };
 
-    // 1. Core Financial Aggregates
-    const donationsAggregate = await Donation.aggregate([
-        { $match: yearMatch },
-        { $group: { _id: null, total: { $sum: "$amount" }, count: { $sum: 1 } } }
+    // Fetch all donations and expenses for target festival year
+    const [donations, expensesAggregate] = await Promise.all([
+        Donation.find(yearMatch).lean(),
+        Expense.aggregate([
+            { $match: yearMatch },
+            { $group: { _id: null, total: { $sum: "$amount" }, count: { $sum: 1 } } }
+        ])
     ]);
 
-    const expensesAggregate = await Expense.aggregate([
-        { $match: yearMatch },
-        { $group: { _id: null, total: { $sum: "$amount" }, count: { $sum: 1 } } }
-    ]);
-
-    const totalDonations = donationsAggregate[0]?.total || 0;
     const totalExpenses = expensesAggregate[0]?.total || 0;
-    const donationsCount = donationsAggregate[0]?.count || 0;
     const expensesCount = expensesAggregate[0]?.count || 0;
 
-    const currentBalance = totalDonations - totalExpenses;
-    const totalTransactions = donationsCount + expensesCount;
+    // Financial aggregates for donations: Pledged vs Collected vs Pending
+    let totalPledgedDonations = 0;
+    let totalCollectedDonations = 0;
+    let totalPendingDonations = 0;
+    let totalResidentDonations = 0;
+    let totalExternalDonorDonations = 0;
 
-    // 1b. Resident vs External Donation Breakdown
-    const donationsByDonorTypeAggregate = await Donation.aggregate([
-        { $match: yearMatch },
-        {
-            $group: {
-                _id: { $ifNull: ["$donorType", "regular"] },
-                total: { $sum: "$amount" },
-                count: { $sum: 1 }
+    const methodMap = { cash: 0, upi: 0, bank: 0 };
+    const monthDonationsMap = {};
+    for (let i = 1; i <= 12; i++) monthDonationsMap[i] = 0;
+
+    const donorTypeMap = { resident: { amount: 0, count: 0 }, external: { amount: 0, count: 0 } };
+
+    donations.forEach(d => {
+        const pledged = d.amount || 0;
+        totalPledgedDonations += pledged;
+
+        let collected = 0;
+        if (Array.isArray(d.payments) && d.payments.length > 0) {
+            d.payments.forEach(p => {
+                const pAmt = Number(p.amount) || 0;
+                collected += pAmt;
+                const pMethod = (p.paymentMethod || "cash").toLowerCase();
+                if (methodMap[pMethod] !== undefined) {
+                    methodMap[pMethod] += pAmt;
+                } else {
+                    methodMap[pMethod] = (methodMap[pMethod] || 0) + pAmt;
+                }
+
+                // Month grouping based on actual payment date
+                const pDate = p.date ? new Date(p.date) : (d.date ? new Date(d.date) : new Date());
+                const m = pDate.getMonth() + 1;
+                monthDonationsMap[m] = (monthDonationsMap[m] || 0) + pAmt;
+            });
+        } else {
+            // Legacy donation
+            if (d.collectionStatus !== "not_collected") {
+                collected = d.collectedAmount != null ? d.collectedAmount : pledged;
+                const pMethod = (d.paymentMethod || "cash").toLowerCase();
+                if (methodMap[pMethod] !== undefined) {
+                    methodMap[pMethod] += collected;
+                } else {
+                    methodMap[pMethod] = (methodMap[pMethod] || 0) + collected;
+                }
+                const dDate = d.date ? new Date(d.date) : new Date();
+                const m = dDate.getMonth() + 1;
+                monthDonationsMap[m] = (monthDonationsMap[m] || 0) + collected;
             }
-        },
-        { $project: { donorType: "$_id", amount: "$total", count: 1, _id: 0 } }
-    ]);
+        }
 
-    const totalResidentDonations = donationsByDonorTypeAggregate.find(d => d.donorType === "resident")?.amount || 0;
-    const totalExternalDonorDonations = donationsByDonorTypeAggregate.find(d => d.donorType === "external")?.amount || 0;
+        totalCollectedDonations += collected;
+        totalPendingDonations += Math.max(pledged - collected, 0);
 
-    // 2. Recent Activities (Latest 5 donations and 5 expenses merged)
-    const recentDonations = await Donation.find(yearMatch)
-        .sort({ date: -1, createdAt: -1 })
-        .limit(5)
-        .lean();
+        const dType = d.donorType === "resident" ? "resident" : "external";
+        donorTypeMap[dType].amount += collected;
+        donorTypeMap[dType].count += 1;
+    });
 
+    totalResidentDonations = donorTypeMap.resident.amount;
+    totalExternalDonorDonations = donorTypeMap.external.amount;
+
+    const donationsByDonorType = [
+        { donorType: "resident", amount: donorTypeMap.resident.amount, count: donorTypeMap.resident.count },
+        { donorType: "external", amount: donorTypeMap.external.amount, count: donorTypeMap.external.count }
+    ];
+
+    const donationsByPaymentMethod = Object.entries(methodMap).map(([method, amount]) => ({
+        paymentMethod: method,
+        amount
+    }));
+
+    // Liquid cash balance strictly reflects collected donations minus expenses
+    const currentBalance = totalCollectedDonations - totalExpenses;
+    const totalTransactions = donations.length + expensesCount;
+
+    // Recent Activities (Latest 5 donations and 5 expenses merged)
     const recentExpenses = await Expense.find(yearMatch)
         .sort({ date: -1, createdAt: -1 })
         .limit(5)
         .lean();
 
+    const recentDonationsSorted = [...donations]
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 5);
+
     const mergedActivity = [
-        ...recentDonations.map(d => ({ ...d, type: "donation" })),
+        ...recentDonationsSorted.map(d => ({ ...d, type: "donation" })),
         ...recentExpenses.map(e => ({ ...e, type: "expense" }))
     ]
         .sort((a, b) => new Date(b.date) - new Date(a.date))
         .slice(0, 10);
 
-    // 3. Expenses by Category Breakdown
+    // Expenses by Category Breakdown
     const expensesByCategory = await Expense.aggregate([
         { $match: yearMatch },
         { $group: { _id: "$category", totalAmount: { $sum: "$amount" } } },
@@ -113,25 +167,7 @@ const getDashboardStats = asyncHandler(async (req, res) => {
         { $sort: { amount: -1 } }
     ]);
 
-    // 4. Donations by Payment Method Breakdown
-    const donationsByPaymentMethod = await Donation.aggregate([
-        { $match: yearMatch },
-        { $group: { _id: "$paymentMethod", totalAmount: { $sum: "$amount" } } },
-        { $project: { paymentMethod: "$_id", amount: "$totalAmount", _id: 0 } }
-    ]);
-
-    // 5. Monthly Comparison (Group by month)
-    // We group both donations and expenses by month (1 to 12)
-    const donationsByMonth = await Donation.aggregate([
-        { $match: yearMatch },
-        {
-            $group: {
-                _id: { $month: "$date" },
-                total: { $sum: "$amount" }
-            }
-        }
-    ]);
-
+    // Monthly Comparison
     const expensesByMonth = await Expense.aggregate([
         { $match: yearMatch },
         {
@@ -142,17 +178,12 @@ const getDashboardStats = asyncHandler(async (req, res) => {
         }
     ]);
 
-    // Map month IDs (1-12) to Names
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const monthlyMap = {};
 
     for (let i = 1; i <= 12; i++) {
-        monthlyMap[i] = { month: monthNames[i - 1], donations: 0, expenses: 0 };
+        monthlyMap[i] = { month: monthNames[i - 1], donations: monthDonationsMap[i] || 0, expenses: 0 };
     }
-
-    donationsByMonth.forEach(d => {
-        if (monthlyMap[d._id]) monthlyMap[d._id].donations = d.total;
-    });
 
     expensesByMonth.forEach(e => {
         if (monthlyMap[e._id]) monthlyMap[e._id].expenses = e.total;
@@ -160,14 +191,17 @@ const getDashboardStats = asyncHandler(async (req, res) => {
 
     const monthlyComparison = Object.values(monthlyMap);
 
-    // 6. Resident / Household Statistics (computed only from resident households)
+    // Resident / Household Statistics & Mahaprasad
     const [residentStats, mahaprasad] = await Promise.all([
         calculateResidentStatistics(userId),
         getMahaprasadPlanning(userId, targetYear)
     ]);
 
     return res.status(200).json(new ApiResponse(200, {
-        totalDonations,
+        totalDonations: totalCollectedDonations,
+        totalPledgedDonations,
+        totalCollectedDonations,
+        totalPendingDonations,
         totalExpenses,
         currentBalance,
         totalTransactions,
@@ -177,7 +211,7 @@ const getDashboardStats = asyncHandler(async (req, res) => {
         monthlyComparison,
         totalResidentDonations,
         totalExternalDonorDonations,
-        donationsByDonorType: donationsByDonorTypeAggregate,
+        donationsByDonorType,
         residentStats,
         mahaprasad
     }, "Dashboard statistics compiled successfully"));
@@ -201,7 +235,7 @@ const getLedger = asyncHandler(async (req, res) => {
     const donations = await Donation.find(yearMatch).lean();
     const expenses = await Expense.find(yearMatch).lean();
 
-    // Map and combine
+    // Map expense transactions (individual payments as separate outflows)
     const expenseTransactions = [];
     expenses.forEach(e => {
         if (Array.isArray(e.payments) && e.payments.length > 0) {
@@ -228,7 +262,6 @@ const getLedger = asyncHandler(async (req, res) => {
                 }
             });
         } else if (e.paymentStatus === "paid" && e.amount > 0) {
-            // Backward compatibility for legacy expenses without a payments array
             expenseTransactions.push({
                 _id: e._id,
                 expenseId: e._id,
@@ -247,24 +280,60 @@ const getLedger = asyncHandler(async (req, res) => {
         }
     });
 
+    // Map donation transactions (individual payments as separate cash inflows)
+    const donationTransactions = [];
+    donations.forEach(d => {
+        if (Array.isArray(d.payments) && d.payments.length > 0) {
+            d.payments.forEach((p, idx) => {
+                if (p.amount > 0) {
+                    const payRef = d.payments.length > 1
+                        ? `${d.receiptNumber}-P${idx + 1}`
+                        : d.receiptNumber;
+
+                    donationTransactions.push({
+                        _id: p._id || `${d._id}_pay_${idx}`,
+                        donationId: d._id,
+                        title: `Donation: ${d.donorName}`,
+                        donorName: d.donorName,
+                        amount: p.amount,
+                        type: "donation",
+                        donorType: d.donorType || "regular",
+                        paymentMethod: p.paymentMethod || "cash",
+                        receiptNumber: d.receiptNumber,
+                        date: p.date || d.date,
+                        note: p.note || d.note,
+                        referenceNumber: payRef
+                    });
+                }
+            });
+        } else if (d.collectionStatus !== "not_collected" && (d.amount > 0 || (d.collectedAmount || 0) > 0)) {
+            // Legacy donation without payments array
+            const amountVal = d.collectedAmount != null ? d.collectedAmount : d.amount;
+            if (amountVal > 0) {
+                donationTransactions.push({
+                    _id: d._id,
+                    donationId: d._id,
+                    title: `Donation: ${d.donorName}`,
+                    donorName: d.donorName,
+                    amount: amountVal,
+                    type: "donation",
+                    donorType: d.donorType || "regular",
+                    paymentMethod: d.paymentMethod || "cash",
+                    receiptNumber: d.receiptNumber,
+                    date: d.date,
+                    note: d.note,
+                    referenceNumber: d.receiptNumber
+                });
+            }
+        }
+    });
+
     const mergedTransactions = [
-        ...donations.map(d => ({
-            _id: d._id,
-            title: `Donation: ${d.donorName}`,
-            donorName: d.donorName,
-            amount: d.amount,
-            type: "donation",
-            donorType: d.donorType || "regular",
-            paymentMethod: d.paymentMethod,
-            receiptNumber: d.receiptNumber,
-            date: d.date,
-            note: d.note,
-            referenceNumber: d.receiptNumber
-        })),
+        ...donationTransactions,
         ...expenseTransactions
     ];
 
-    // Sort by date ascending to calculate running balance
+    // Sort chronologically ascending to calculate running balance
     mergedTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
 
     let balance = 0;
@@ -280,7 +349,7 @@ const getLedger = asyncHandler(async (req, res) => {
         };
     });
 
-    // Reverse to chronological descending order (latest transactions first) for display
+    // Reverse to descending order (latest transactions first) for display
     ledger.reverse();
 
     return res.status(200).json(new ApiResponse(200, ledger, "Ledger fetched successfully"));

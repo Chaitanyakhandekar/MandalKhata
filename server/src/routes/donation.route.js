@@ -2,6 +2,9 @@ import { Router } from "express";
 import {
     getDonations,
     createDonation,
+    addPaymentToDonation,
+    updateDonationPayment,
+    deleteDonationPayment,
     updateDonation,
     deleteDonation
 } from "../controllers/donation.controller.js";
@@ -19,5 +22,13 @@ router.route("/")
 router.route("/:id")
     .put(updateDonation)
     .delete(deleteDonation);
+
+// Multi-payment routes for a donation
+router.route("/:id/payments")
+    .post(addPaymentToDonation);
+
+router.route("/:id/payments/:paymentId")
+    .put(updateDonationPayment)
+    .delete(deleteDonationPayment);
 
 export default router;
